@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f5f2" />
+    <title>DeepPanda AI</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="workspace">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="DeepPanda AI ana sayfa">
+          <span class="brand-mark" aria-hidden="true">dp</span>
+          <span>DeepPanda <b>AI</b></span>
+        </a>
+        <div class="top-actions">
+          <a class="pe-lab-link" href="/pe-lab.html">PE Lab</a>
+          <button id="open-tools" class="tools-trigger" type="button" aria-label="Yerel araçlar">
+            <span aria-hidden="true">✦</span>
+            <span>Araçlar</span>
+          </button>
+          <button id="open-research" class="research-trigger" type="button" aria-label="Kaynak araştırması">
+            <span aria-hidden="true">⌕</span>
+            <span>Araştırma</span>
+          </button>
+          <button id="open-jobs" class="jobs-trigger" type="button" aria-label="Arka plan işleri">
+            <span aria-hidden="true">◷</span>
+            <span>İşler</span>
+          </button>
+          <button id="open-tasks" class="tasks-trigger" type="button" aria-label="Görev planları">
+            <span aria-hidden="true">☷</span>
+            <span>Görevler</span>
+          </button>
+          <button id="open-documents" class="documents-trigger" type="button" aria-label="Belgeler">
+            <span aria-hidden="true">▤</span>
+            <span>Belgeler</span>
+          </button>
+          <button id="open-code-graph" class="graph-trigger" type="button" aria-label="Kod grafı">
+            <span aria-hidden="true">⌘</span>
+            <span>Kod grafı</span>
+          </button>
+          <button id="open-memory" class="memory-trigger" type="button" aria-label="Hafıza">
+            <span aria-hidden="true">⌂</span>
+            <span>Hafıza</span>
+          </button>
+          <button id="scan-diagnostics" class="diagnostics-trigger" type="button" aria-label="Hata tara">
+            <span aria-hidden="true">⌕</span>
+            <span>Hata tara</span>
+          </button>
+          <div class="connection" id="connection" role="status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="connection-label">Bağlantı denetleniyor</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="conversation" aria-label="Sohbet">
+        <div class="welcome" id="welcome">
+          <p class="eyebrow">YEREL ZEKA · MERKEZİ EKLENTİ KATMANI</p>
+          <h1>Bugün ne<br /><em>üreteceğiz?</em></h1>
+          <p class="welcome-copy">DeepPanda AI hazır olduğunda sohbeti buradan başlat.</p>
+        </div>
+        <div class="messages" id="messages" aria-live="polite"></div>
+        <section id="intent-panel" class="intent-panel" aria-labelledby="intent-title" hidden>
+          <div class="intent-heading">
+            <div>
+              <p class="eyebrow">YEREL MODEL · ÖNERİ</p>
+              <h2 id="intent-title">İstek yönlendirme</h2>
+            </div>
+            <button id="close-intent" class="close-diagnostics" type="button" title="Yönlendirmeyi kapat" aria-label="Yönlendirmeyi kapat">×</button>
+          </div>
+          <div class="intent-result-heading">
+            <strong id="intent-name"></strong>
+            <span id="intent-confidence"></span>
+          </div>
+          <p id="intent-rationale" class="intent-copy"></p>
+          <p id="intent-next-step" class="intent-next-step"></p>
+          <button id="intent-task-draft" class="task-step-action" type="button" hidden>Görev taslağı oluştur</button>
+          <p id="intent-status" class="memory-status" role="status"></p>
+          <form id="learning-proposal-form" class="intent-learning-form" hidden>
+            <h3>Öğrenme önerisi</h3>
+            <label>Başlık<input id="learning-title" maxlength="200" required /></label>
+            <label>Proje<input id="learning-project" maxlength="200" /></label>
+            <label>Kategori<input id="learning-category" maxlength="80" value="general" /></label>
+            <label>Not<textarea id="learning-content" maxlength="2000" rows="4" required></textarea></label>
+            <label class="memory-consent">
+              <input id="learning-approved" type="checkbox" />
+              <span>Düzenlediğim notu cihazımdaki yerel hafızaya kaydetmeyi onaylıyorum.</span>
+            </label>
+            <button id="learning-save" class="memory-save-button" type="submit" disabled>Onayla ve hafızaya kaydet</button>
+            <p id="learning-save-status" class="memory-status" role="status"></p>
+          </form>
+        </section>
+        <section id="diagnostics-panel" class="diagnostics-panel" aria-labelledby="diagnostics-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL WORKSPACE · SALT OKUNUR</p>
+              <h2 id="diagnostics-title">Hata analizi</h2>
+            </div>
+            <button id="close-diagnostics" class="close-diagnostics" type="button" title="Analizi kapat" aria-label="Analizi kapat">×</button>
+          </div>
+          <p id="diagnostics-summary" class="diagnostics-summary">Tarama başlatılmadı.</p>
+          <div id="diagnostics-results" class="diagnostics-results" aria-live="polite"></div>
+        </section>
+        <section id="memory-panel" class="memory-panel" aria-labelledby="memory-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL SQLITE · KULLANICI DENETİMLİ</p>
+              <h2 id="memory-title">Proje hafızası</h2>
+            </div>
+            <button id="close-memory" class="close-diagnostics" type="button" title="Hafızayı kapat" aria-label="Hafızayı kapat">×</button>
+          </div>
+          <div class="memory-layout">
+            <form id="memory-save-form" class="memory-form">
+              <h3>Not kaydet</h3>
+              <label>Başlık<input id="memory-title-input" maxlength="200" required /></label>
+              <div class="memory-form-row">
+                <label>Proje<input id="memory-project-input" maxlength="200" placeholder="AI-Next" /></label>
+                <label>Kategori<input id="memory-category-input" maxlength="80" value="general" /></label>
+              </div>
+              <label>Not<textarea id="memory-content-input" maxlength="10000" rows="4" required></textarea></label>
+              <label class="memory-consent">
+                <input id="memory-approved" type="checkbox" />
+                <span>Bu notun cihazımdaki yerel hafızaya yazılmasını onaylıyorum.</span>
+              </label>
+              <button id="memory-save-button" class="memory-save-button" type="submit" disabled>Onayla ve kaydet</button>
+              <p id="memory-save-status" class="memory-status" role="status"></p>
+            </form>
+            <div class="memory-browser">
+              <h3>Hafızada ara</h3>
+              <form id="memory-search-form" class="memory-search-form">
+                <input id="memory-query" type="search" maxlength="500" placeholder="Karar, hata veya not ara" required />
+                <button type="submit" aria-label="Hafızada ara">Ara</button>
+              </form>
+              <div class="memory-filter-row">
+                <input id="memory-project-filter" maxlength="200" placeholder="Proje filtresi" aria-label="Proje filtresi" />
+                <input id="memory-category-filter" maxlength="80" placeholder="Kategori filtresi" aria-label="Kategori filtresi" />
+                <input id="memory-source-filter" maxlength="200" placeholder="Kaynak filtresi" aria-label="Kaynak filtresi" />
+              </div>
+              <button id="memory-timeline" class="memory-timeline" type="button">Son notlar</button>
+              <button id="memory-taxonomy" class="memory-timeline" type="button">Taxonomy göster</button>
+              <div class="memory-portability-actions">
+                <button id="memory-export" class="task-step-action" type="button">Onayla ve dışa aktar</button>
+                <form id="memory-import-form" class="memory-import-form">
+                  <label>JSON içe aktar<input id="memory-import-file" type="file" accept="application/json,.json" /></label>
+                  <label class="memory-consent"><input id="memory-import-approved" type="checkbox" /><span>Yerel hafızaya eklemeyi onaylıyorum.</span></label>
+                  <button id="memory-import-button" class="memory-save-button" type="submit" disabled>Onayla ve içe aktar</button>
+                </form>
+              </div>
+              <form id="memory-source-preview-form" class="memory-search-form">
+                <input id="memory-source-query" maxlength="200" placeholder="Silinecek source ID" required />
+                <button type="submit">Kaynağı incele</button>
+              </form>
+              <div id="memory-source-preview" class="memory-results" aria-live="polite"></div>
+              <p id="memory-tools-status" class="memory-status" role="status"></p>
+              <div id="memory-results" class="memory-results" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="memory-browser">
+            <h3>Eski hafıza · salt okunur</h3>
+            <p>Aktarılmış eski notlar burada ayrı gösterilir; otomatik olarak sohbete veya mevcut hafıza aramasına eklenmez.</p>
+            <form id="legacy-memory-search" class="memory-search-form">
+              <input id="legacy-memory-query" type="search" maxlength="200" placeholder="Eski notlarda ara" />
+              <button type="submit">Ara / listele</button>
+            </form>
+            <p id="legacy-memory-status" class="memory-status" role="status"></p>
+            <div id="legacy-memory-results" class="memory-results"></div>
+            <button id="legacy-memory-next" class="memory-timeline" type="button" hidden>Sonraki sayfa</button>
+            <button id="legacy-memory-clear" class="memory-timeline" type="button">Görünümü temizle</button>
+            <pre id="legacy-memory-detail" class="document-preview-content" aria-live="polite"></pre>
+          </div>
+        </section>
+        <section id="graph-panel" class="graph-panel" aria-labelledby="graph-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL PYTHON AST · KOD ÇALIŞTIRILMAZ</p>
+              <h2 id="graph-title">Kod grafı</h2>
+            </div>
+            <button id="close-code-graph" class="close-diagnostics" type="button" title="Grafı kapat" aria-label="Grafı kapat">×</button>
+          </div>
+          <div class="graph-actions">
+            <button id="build-code-graph" class="memory-save-button" type="button">Grafı kur / güncelle</button>
+            <form id="graph-search-form" class="memory-search-form">
+              <input id="graph-search-query" type="search" maxlength="200" placeholder="Fonksiyon veya sınıf ara" required />
+              <button type="submit">Ara</button>
+            </form>
+            <form id="graph-path-form" class="graph-path-form">
+              <input id="graph-path-source" maxlength="300" placeholder="Başlangıç sembolü" required />
+              <span aria-hidden="true">→</span>
+              <input id="graph-path-target" maxlength="300" placeholder="Hedef sembol" required />
+              <button type="submit">Yol bul</button>
+            </form>
+          </div>
+          <p id="graph-status" class="memory-status" role="status">Graf henüz oluşturulmadı.</p>
+          <div id="graph-results" class="memory-results" aria-live="polite"></div>
+        </section>
+        <section id="documents-panel" class="memory-panel" aria-labelledby="documents-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL DOSYA · AÇIK ONAY</p>
+              <h2 id="documents-title">Belgeler</h2>
+            </div>
+            <button id="close-documents" class="close-diagnostics" type="button" title="Belgeleri kapat" aria-label="Belgeleri kapat">×</button>
+          </div>
+          <div class="memory-layout">
+            <form id="document-upload-form" class="memory-form">
+              <h3>Belge ekle</h3>
+              <label>Dosya<input id="document-file" type="file" accept=".pdf,.docx,.pptx,.xlsx,.xlsm,.txt,.md,.py,.json,.ts,.tsx" required /></label>
+              <label class="memory-consent">
+                <input id="document-approved" type="checkbox" />
+                <span>Dosyayı yerel arama indeksine eklemeyi onaylıyorum. İçerik otomatik sohbet hafızasına kaydedilmez.</span>
+              </label>
+              <button id="document-upload-button" class="memory-save-button" type="submit" disabled>Onayla ve işle</button>
+              <p id="document-upload-status" class="memory-status" role="status"></p>
+            </form>
+            <div class="memory-browser">
+              <h3>Belge ara</h3>
+              <form id="document-search-form" class="memory-search-form">
+                <input id="document-query" type="search" maxlength="500" placeholder="Belge içeriğinde ara" required />
+                <button type="submit">Ara</button>
+              </form>
+              <button id="document-list-button" class="memory-timeline" type="button">Yüklü belgeler</button>
+              <div id="document-results" class="memory-results" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+        <section id="tasks-panel" class="memory-panel" aria-labelledby="tasks-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL SQLITE · ONAYLI İLERLEME</p>
+              <h2 id="tasks-title">Görev planları</h2>
+            </div>
+            <button id="close-tasks" class="close-diagnostics" type="button" title="Görevleri kapat" aria-label="Görevleri kapat">×</button>
+          </div>
+          <div class="memory-layout tasks-layout">
+            <form id="task-create-form" class="memory-form">
+              <h3>Plan oluştur</h3>
+              <label>Görev<textarea id="task-request" maxlength="20000" rows="3" required placeholder="Yapılacak kodlama işini yaz"></textarea></label>
+              <label>Adımlar<textarea id="task-steps" maxlength="16000" rows="6" required placeholder="Her satıra bir adım yaz"></textarea></label>
+              <button id="task-draft-button" class="task-step-action" type="button">Modelle taslak çıkar</button>
+              <button class="memory-save-button" type="submit">Planı kaydet</button>
+              <p id="task-create-status" class="memory-status" role="status"></p>
+            </form>
+            <div class="memory-browser">
+              <div class="task-list-heading">
+                <h3>Plan geçmişi</h3>
+                <button id="task-refresh" class="memory-timeline" type="button">Yenile</button>
+              </div>
+              <div id="task-list" class="memory-results" aria-live="polite"></div>
+              <div id="task-detail" class="task-detail" aria-live="polite" hidden></div>
+            </div>
+          </div>
+          <div class="memory-layout">
+            <div class="memory-form">
+              <h3>Eski arşiv · salt okunur</h3>
+              <p>ZIP hassas bilgiler içerebilir. Yalnız bu bilgisayardaki güvenilir DeepPanda sunucusunu kullanın.
+                Her işlemde arşiv yeniden gönderilir; geçmiş komutlar çalıştırılmaz, onaylar yetki vermez.</p>
+              <label>ZIP arşivi (en fazla 64 MiB)<input id="legacy-file" type="file" accept=".zip,application/zip" /></label>
+              <button id="legacy-scan" class="task-step-action" type="button">Arşiv adaylarını incele</button>
+              <label>Veritabanı <select id="legacy-candidate" disabled></select></label>
+              <button id="legacy-list" class="task-step-action" type="button" disabled>Geçmiş görevleri göster</button>
+              <button id="legacy-clear" class="task-step-action" type="button">Geçmişi temizle</button>
+              <p id="legacy-status" class="memory-status" role="status"></p>
+            </div>
+            <div class="memory-browser">
+              <h3>Eski görevler</h3>
+              <div id="legacy-tasks" class="memory-results"></div>
+              <pre id="legacy-detail" class="document-preview-content" aria-live="polite"></pre>
+            </div>
+          </div>
+        </section>
+        <section id="tools-panel" class="memory-panel" aria-labelledby="tools-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL MODELLER · ONAY KAPILI EKLENTİLER</p>
+              <h2 id="tools-title">Yerel araçlar</h2>
+            </div>
+            <button id="close-tools" class="close-diagnostics" type="button" title="Araçları kapat" aria-label="Araçları kapat">×</button>
+          </div>
+          <div id="tools-tabs" class="tools-tabs" role="tablist" aria-label="Araç kategorileri"></div>
+          <div id="tools-body" class="tools-body" aria-live="polite"></div>
+        </section>
+        <section id="jobs-panel" class="memory-panel" aria-labelledby="jobs-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">YEREL SQLITE · PAYLAŞILAN JOB DURUMU</p>
+              <h2 id="jobs-title">Arka plan işleri</h2>
+            </div>
+            <button id="close-jobs" class="close-diagnostics" type="button" title="İşleri kapat" aria-label="İşleri kapat">×</button>
+          </div>
+          <div class="job-list-heading">
+            <p id="jobs-status" class="memory-status" role="status">İşler yüklenmedi.</p>
+            <div class="job-maintenance-actions">
+              <label for="jobs-stale-after">Stale lease (sn)<input id="jobs-stale-after" type="number" min="60" max="604800" step="60" value="900" /></label>
+              <button id="jobs-recover-stale" class="document-delete-button" type="button">Takılı işleri toparla</button>
+              <button id="jobs-refresh" class="memory-timeline" type="button">Yenile</button>
+            </div>
+          </div>
+          <p id="jobs-recovery-status" class="memory-status" role="status"></p>
+          <ul id="jobs-recovery-preview" class="task-history" aria-label="Toparlama adayları"></ul>
+          <div id="jobs-list" class="memory-results" aria-live="polite"></div>
+          <div id="job-detail" class="job-detail" aria-live="polite" hidden></div>
+        </section>
+        <section id="research-panel" class="memory-panel" aria-labelledby="research-title" hidden>
+          <div class="diagnostics-heading">
+            <div>
+              <p class="eyebrow">PUBLIC URL · KULLANICI ONAYI</p>
+              <h2 id="research-title">Kaynak araştırması</h2>
+            </div>
+            <button id="close-research" class="close-diagnostics" type="button" title="Araştırmayı kapat" aria-label="Araştırmayı kapat">×</button>
+          </div>
+          <form id="research-search-form" class="research-search-form">
+            <label for="research-query">Public web search · sorgu DuckDuckGo’ya gönderilir</label>
+            <div class="memory-search-form">
+              <input id="research-query" type="search" maxlength="300" placeholder="Public kaynak ara" required />
+              <button id="research-search-button" type="submit">Ara</button>
+            </div>
+          </form>
+          <div id="research-results" class="research-results" aria-live="polite"></div>
+          <form id="research-form" class="research-form">
+            <label>Soru<textarea id="research-question" maxlength="2000" rows="3" required placeholder="Kaynaklarda yanıtlanmasını istediğin soru"></textarea></label>
+            <label>Seçilen public URL’ler<textarea id="research-urls" maxlength="10240" rows="5" required placeholder="Her satıra bir http(s) URL; en fazla 5 kaynak"></textarea></label>
+            <button id="research-start" class="memory-save-button" type="submit">Onayla ve araştır</button>
+            <p id="research-status" class="memory-status" role="status"></p>
+          </form>
+          <form id="github-research-form" class="research-form github-research-form">
+            <h3>GitHub README araştırması</h3>
+            <label>Soru<textarea id="github-research-question" maxlength="2000" rows="2" required placeholder="Repository kaynaklarına göre yanıtlanacak soru"></textarea></label>
+            <label>Public repository URL’leri<textarea id="github-repository-urls" maxlength="6144" rows="3" required placeholder="Her satıra bir github.com/owner/repo URL’si; en fazla 3"></textarea></label>
+            <button id="github-research-start" class="memory-save-button" type="submit">Onayla ve README’leri araştır</button>
+            <p id="github-research-status" class="memory-status" role="status"></p>
+          </form>
+          <section class="research-form repo-watch-panel" aria-labelledby="repo-watch-title">
+            <h3 id="repo-watch-title">Public repo takibi</h3>
+            <form id="knowledge-search-form" class="research-search-form">
+              <label for="knowledge-query">Yerel anlamsal arama · Qdrant</label>
+              <div class="memory-search-form">
+                <input id="knowledge-query" type="search" maxlength="1000" placeholder="İndekslenmiş kaynaklarda ara" required />
+                <button type="submit">Ara</button>
+              </div>
+            </form>
+            <p id="knowledge-status" class="memory-status" role="status"></p>
+            <div id="knowledge-results" class="memory-results" aria-live="polite"></div>
+            <form id="repo-watch-add-form" class="memory-search-form">
+              <input id="repo-watch-repository" maxlength="140" placeholder="owner/repository" aria-label="GitHub repository" required />
+              <button type="submit">Allowlist’e ekle</button>
+            </form>
+            <form id="repo-watch-polling-form" class="repo-polling-controls">
+              <label class="memory-consent">
+                <input id="repo-watch-polling-enabled" type="checkbox" />
+                <span>Allowlist’teki depoların release ve son commit metadata’sını otomatik kontrol et</span>
+              </label>
+              <label for="repo-watch-polling-interval">Kontrol aralığı · dakika</label>
+              <div class="memory-search-form">
+                <input id="repo-watch-polling-interval" type="number" min="5" max="1440" step="1" value="60" required />
+                <button type="submit">Kaydet</button>
+              </div>
+              <p id="repo-watch-polling-status" class="memory-status" role="status"></p>
+            </form>
+            <p id="repo-watch-status" class="memory-status" role="status"></p>
+            <div id="repo-watch-list" class="memory-results" aria-live="polite"></div>
+            <div id="repo-watch-result" class="memory-results" aria-live="polite"></div>
+            <form id="binary-inspection-form" class="research-form binary-inspection-form">
+              <h3>Yerel binary statik analizi</h3>
+              <label>PE / ELF / Mach-O dosyası<input id="binary-inspection-file" type="file" accept=".exe,.dll,.sys,.elf,.so,.dylib,.bin,.exe,application/octet-stream" required /></label>
+              <label class="memory-consent">
+                <input id="binary-inspection-approved" type="checkbox" />
+                <span>Seçtiğim dosyada başlık, section, sınırlı disassembly ve strings çıkarılmasını; dosyanın çalıştırılmamasını onaylıyorum (10 MB’a kadar).</span>
+              </label>
+              <button id="binary-inspection-button" class="memory-save-button" type="submit" disabled>Onayla ve statik incele</button>
+              <p id="binary-inspection-status" class="memory-status" role="status"></p>
+              <div id="binary-inspection-result" class="memory-results" aria-live="polite"></div>
+            </form>
+            <form id="browser-inspection-form" class="research-form browser-inspection-form">
+              <h3>Salt-okunur browser snapshot</h3>
+              <label>Local/allowlisted URL<input id="browser-inspection-url" type="url" maxlength="2048" value="http://web/" required /></label>
+              <label class="memory-consent">
+                <input id="browser-inspection-approved" type="checkbox" />
+                <span>Yalnızca izinli sayfayı GET ile açıp metin snapshot’ı almayı onaylıyorum. Etkileşim, form gönderimi ve harici hostlar engellenir.</span>
+              </label>
+              <button id="browser-inspection-button" class="memory-save-button" type="submit" disabled>Onayla ve snapshot al</button>
+              <p id="browser-inspection-status" class="memory-status" role="status"></p>
+              <div id="browser-inspection-result" class="memory-results" aria-live="polite"></div>
+            </form>
+          </section>
+        </section>
+      </section>
+
+      <form class="composer" id="chat-form">
+        <section class="model-selector" aria-label="Model seçimi">
+          <div class="model-controls">
+            <label class="model-field" for="model-select">
+              <span>MODEL</span>
+              <select id="model-select" aria-label="Kullanılacak model">
+                <option value="">Varsayılan model</option>
+              </select>
+            </label>
+            <label class="model-search" for="model-search">
+              <span>ARA</span>
+              <input id="model-search" type="search" placeholder="Model filtrele" autocomplete="off" />
+            </label>
+            <button id="refresh-models" class="refresh-button" type="button" title="Model listesini yenile" aria-label="Model listesini yenile">
+              <span aria-hidden="true">↻</span>
+            </button>
+          </div>
+          <div class="model-info" aria-live="polite">
+            <div class="model-identity">
+              <span class="model-orbit" aria-hidden="true">AI</span>
+              <div>
+                <span class="model-kicker">AKTİF MODEL</span>
+                <strong id="selected-model-name">Varsayılan model</strong>
+              </div>
+              <span id="default-badge" class="default-badge">VARSAYILAN</span>
+            </div>
+            <dl class="model-specs">
+              <div><dt>AİLE</dt><dd id="model-family">-</dd></div>
+              <div><dt>PARAMETRE</dt><dd id="model-parameters">-</dd></div>
+              <div><dt>QUANTIZATION</dt><dd id="model-quantization">-</dd></div>
+              <div><dt>BOYUT</dt><dd id="model-size">-</dd></div>
+            </dl>
+          </div>
+          <label class="workflow-field" for="workflow-select">
+            <span>ÇALIŞMA MODU</span>
+            <select id="workflow-select" aria-label="Çalışma modu">
+              <option value="standard">Standart</option>
+            </select>
+          </label>
+          <p id="workflow-status" class="memory-status" role="status"></p>
+          <details id="cloud-provider-panel" class="cloud-provider-panel">
+            <summary>Bulut API sağlayıcıları (Gemini, Kimi, GPT, Claude...)</summary>
+            <p class="memory-status">Anahtarlar yalnızca bu cihazdaki API veri klasöründe saklanır ve arayüze geri gönderilmez.</p>
+            <div class="cloud-manager-list"></div>
+          </details>
+        </section>
+        <div class="session-controls">
+          <label class="session-picker" for="session-select">
+            <span>SOHBET</span>
+            <select id="session-select" aria-label="Sohbet oturumu">
+              <option value="">Yeni sohbet</option>
+            </select>
+          </label>
+          <button id="new-chat" class="session-action" type="button">Yeni</button>
+          <button id="delete-session" class="session-action danger" type="button" title="Seçili sohbeti sil" disabled>Sil</button>
+          <span id="session-status" class="session-status" role="status"></span>
+        </div>
+        <div class="input-row">
+          <textarea id="message" rows="1" maxlength="20000" placeholder="Mesajını yaz..." required></textarea>
+          <button id="send" class="send-button" type="submit" title="Mesajı gönder" aria-label="Mesajı gönder">
+            <span aria-hidden="true">↑</span>
+          </button>
+        </div>
+        <div class="composer-footer">
+          <span>Yerel model · Veri cihazında kalır</span>
+          <span id="model-status">Model durumu yükleniyor</span>
+        </div>
+      </form>
+    </main>
+    <dialog id="document-preview-dialog" class="document-preview-dialog" aria-labelledby="document-preview-title">
+      <div class="document-preview-heading">
+        <div>
+          <p class="eyebrow">YEREL METİN ÖNİZLEMESİ</p>
+          <h2 id="document-preview-title">Belge</h2>
+        </div>
+        <button id="close-document-preview" class="close-diagnostics" type="button" title="Önizlemeyi kapat" aria-label="Önizlemeyi kapat">×</button>
+      </div>
+      <p id="document-preview-status" class="memory-status"></p>
+      <pre id="document-preview-content" class="document-preview-content"></pre>
+    </dialog>
+    <script src="/app.js?v=2026-11-06-cloud-providers" defer></script>
+    <script src="/cloud.js?v=2026-11-06-cloud-providers" defer></script>
+    <script src="/legacy-history.js" defer></script>
+    <script src="/legacy-memory.js" defer></script>
+    <script src="/tools.js?v=2026-11-06-prompt-preview" defer></script>
+  </body>
+</html>

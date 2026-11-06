@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "answer": [
+    {"id": "answer-multiply", "prompt": "What is 19 multiplied by 23? Return only the integer answer.", "expected": 437},
+    {"id": "answer-hours", "prompt": "How many minutes are in 3.5 hours? Return only the integer answer.", "expected": 210},
+    {"id": "answer-logic", "prompt": "All red objects are tagged. The box is red. Is the box tagged? Return exactly yes or no.", "expected": "yes"}
+  ],
+  "planning": [
+    {
+      "id": "plan-csv-export",
+      "request": "Add CSV export to an existing Python CLI. Include implementation, tests, and README documentation. Do not edit files or run commands.",
+      "min_steps": 3,
+      "max_steps": 20,
+      "required_concepts": [["csv", "comma-separated"], ["test", "pytest"], ["readme", "documentation", "docs"]]
+    },
+    {
+      "id": "plan-api-retries",
+      "request": "Plan adding bounded retries with exponential backoff to an HTTP client. Cover configuration and tests; do not make changes.",
+      "min_steps": 3,
+      "max_steps": 20,
+      "required_concepts": [["retry", "retries", "backoff"], ["config", "setting"], ["test", "pytest"]]
+    },
+    {
+      "id": "plan-schema-migration",
+      "request": "Plan a SQLite schema migration for a new nullable field. Include backup, migration, and verification tests. Do not execute anything.",
+      "min_steps": 3,
+      "max_steps": 20,
+      "required_concepts": [["backup"], ["migration", "schema"], ["test", "verify"]]
+    }
+  ],
+  "source_grounded": [
+    {
+      "id": "source-web-port",
+      "question": "Which local port serves the web UI? Return the port and one evidence line number.",
+      "source_lines": ["The API listens at 127.0.0.1:8787.", "The web UI listens at 127.0.0.1:8788.", "The Ollama service is internal to the Compose network."],
+      "expected_answer": "8788",
+      "expected_line": 2
+    },
+    {
+      "id": "source-volume-count",
+      "question": "How many named volumes are restored by the installer? Return the count and one evidence line number.",
+      "source_lines": ["The bundle contains five container images.", "The installer restores four named data volumes.", "The Docker Desktop installer is not included."],
+      "expected_answers": ["four", "4"],
+      "expected_line": 2
+    },
+    {
+      "id": "source-model-name",
+      "question": "Which model is configured as the default? Return the exact model name and one evidence line number.",
+      "source_lines": ["The API uses qwen3.6:latest as its default model.", "Ollama keeps one model loaded at a time.", "Embedding queries use nomic-embed-text:latest."],
+      "expected_answer": "qwen3.6:latest",
+      "expected_line": 1
+    }
+  ],
+  "learning": [
+    {
+      "id": "learn-pytest",
+      "message": "Please remember this project preference: use pytest for Python tests.",
+      "required_terms": [["pytest"], ["python", "test"]]
+    },
+    {
+      "id": "learn-postgres",
+      "message": "Remember that this workspace uses PostgreSQL for integration tests.",
+      "required_terms": [["postgresql", "postgres"], ["integration test"]]
+    },
+    {
+      "id": "learn-python-version",
+      "message": "For this project, remember that the supported runtime is Python 3.12.",
+      "required_terms": [["python 3.12"], ["runtime", "version"]]
+    }
+  ],
+  "code_change": [
+    {
+      "id": "code-none-guard",
+      "path": "src/normalize.py",
+      "source": "def normalize_name(value):\n    return value.strip()\n",
+      "request": "Handle None input by returning an empty string; preserve normal string behavior.",
+      "required_concepts": [["value is None", "is None"], ["return \"\"", "return ''"], ["strip()"]]
+    },
+    {
+      "id": "code-count-default",
+      "path": "src/counts.py",
+      "source": "def parse_count(value):\n    return int(value)\n",
+      "request": "Return zero when value is None; otherwise return int(value). Keep this function's public signature.",
+      "required_concepts": [["value is None", "is None"], ["return 0"], ["int(value)"]]
+    },
+    {
+      "id": "code-clamp-invalid-range",
+      "path": "src/ranges.py",
+      "source": "def clamp(value, low, high):\n    return min(max(value, low), high)\n",
+      "request": "Raise ValueError when low is greater than high; otherwise keep the existing clamping behavior.",
+      "required_concepts": [["valueerror"], ["low > high", "low >= high"], ["min(max(value, low), high)", "max(value, low)"]]
+    }
+  ]
+}

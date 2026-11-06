@@ -1,0 +1,22 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - 127.0.0.1:6333:6333
+      - 127.0.0.1:6334:6334
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - 127.0.0.1:6379:6379
+
+volumes:
+  qdrant_data:
+  redis_data:

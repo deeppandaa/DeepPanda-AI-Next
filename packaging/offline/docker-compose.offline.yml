@@ -1,0 +1,83 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  api:
+    image: deeppanda-ai-next-api:latest
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      QDRANT_URL: http://qdrant:6333
+      BROWSER_ALLOWED_HOSTS: localhost,127.0.0.1,::1,web,host.docker.internal
+      OLLAMA_MODEL: qwen3.6:latest
+      WEB_SEARCH_PROVIDER: auto
+      DIAGNOSTICS_ROOT: /workspace
+      AI_DATA_DIR: /data
+    depends_on:
+      - ollama
+    volumes:
+      - ./workspace:/workspace
+      - ai_data:/data
+    ports:
+      - 127.0.0.1:8787:8000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  web:
+    image: deeppanda-ai-next-web:latest
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:8788:80
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    pull_policy: never
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - 127.0.0.1:6333:6333
+      - 127.0.0.1:6334:6334
+
+  redis:
+    image: redis:7-alpine
+    pull_policy: never
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - 127.0.0.1:6379:6379
+
+volumes:
+  ai_data:
+    external: true
+    name: deeppanda-offline_ai_data
+  ollama_data:
+    external: true
+    name: deeppanda-offline_ollama_data
+  qdrant_data:
+    external: true
+    name: deeppanda-offline_qdrant_data
+  redis_data:
+    external: true
+    name: deeppanda-offline_redis_data

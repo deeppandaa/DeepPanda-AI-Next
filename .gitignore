@@ -1,0 +1,11 @@
+.env
+.freellmapi.env
+.ai-next-cloud.env
+data/
+models/
+*.log
+__pycache__/
+.pytest_cache/
+.venv/_arsiv/
+.ruff_cache/
+_tmp/

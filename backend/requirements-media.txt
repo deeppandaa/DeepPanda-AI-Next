@@ -1,0 +1,9 @@
+# Optional heavy local media/speech stack. Installed when the image is built with
+# INSTALL_MEDIA=true (see docker-compose.yml / README). CPU wheels by default.
+faster-whisper>=1.1,<2
+piper-tts>=1.3,<2
+torch>=2.4,<3
+diffusers>=0.31,<1
+transformers>=4.46,<5
+accelerate>=1,<2
+imageio[ffmpeg]>=2.35,<3

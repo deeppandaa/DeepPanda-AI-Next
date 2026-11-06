@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-02T18:41:01Z",
+  "models_tested": [
+    "qwen2.5-coder:7b",
+    "qwen3.6:latest",
+    "codellama:7b",
+    "llama3.1:8b"
+  ],
+  "area_priorities": {
+    "intent": [
+      "qwen3.6:latest",
+      "qwen2.5-coder:7b",
+      "llama3.1:8b",
+      "codellama:7b"
+    ],
+    "answer": [
+      "llama3.1:8b",
+      "qwen3.6:latest",
+      "qwen2.5-coder:7b",
+      "codellama:7b"
+    ],
+    "planning": [
+      "qwen2.5-coder:7b",
+      "qwen3.6:latest",
+      "llama3.1:8b",
+      "codellama:7b"
+    ],
+    "source_grounded": [
+      "qwen2.5-coder:7b",
+      "codellama:7b",
+      "qwen3.6:latest",
+      "llama3.1:8b"
+    ],
+    "learning": [
+      "llama3.1:8b",
+      "qwen3.6:latest",
+      "codellama:7b",
+      "qwen2.5-coder:7b"
+    ],
+    "code_change": [
+      "qwen3.6:latest",
+      "qwen2.5-coder:7b",
+      "llama3.1:8b",
+      "codellama:7b"
+    ]
+  },
+  "scores": {
+    "qwen2.5-coder:7b": {
+      "intent": 0.9624,
+      "answer": 0.6667,
+      "planning": 1.0,
+      "source_grounded": 1.0,
+      "learning": 0.3333,
+      "code_change": 0.6667
+    },
+    "qwen3.6:latest": {
+      "intent": 0.9713,
+      "answer": 1.0,
+      "planning": 1.0,
+      "source_grounded": 1.0,
+      "learning": 1.0,
+      "code_change": 1.0
+    },
+    "codellama:7b": {
+      "intent": 0.7442,
+      "answer": 0.6667,
+      "planning": 1.0,
+      "source_grounded": 1.0,
+      "learning": 0.6667,
+      "code_change": 0.0
+    },
+    "llama3.1:8b": {
+      "intent": 0.9263,
+      "answer": 1.0,
+      "planning": 1.0,
+      "source_grounded": 0.8333,
+      "learning": 1.0,
+      "code_change": 0.6667
+    }
+  },
+  "source": "model_eval deterministic local benchmark"
+}

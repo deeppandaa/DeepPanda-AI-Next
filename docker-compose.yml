@@ -1,0 +1,91 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  freellmapi:
+    image: ghcr.io/tashfeenahmed/freellmapi:v0.16.16
+    restart: unless-stopped
+    env_file:
+      - .freellmapi.env
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+    volumes:
+      - freellmapi_data:/app/server/data
+    ports:
+      - "127.0.0.1:${FREELLMAPI_HOST_PORT:-3001}:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/ping').then((r)=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  api:
+    image: deeppanda-ai-next-api:latest
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: .ai-next-cloud.env
+        required: false
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      FREELLMAPI_BASE_URL: http://freellmapi:3001/v1
+      MODEL_ROUTING_PREFERENCES: /workspace/model-area-priorities.json
+      QDRANT_URL: http://qdrant:6333
+      BROWSER_ALLOWED_HOSTS: ${BROWSER_ALLOWED_HOSTS:-localhost,127.0.0.1,::1,web,host.docker.internal}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.6:latest}
+      WEB_SEARCH_PROVIDER: ${WEB_SEARCH_PROVIDER:-auto}
+      YANDEX_SEARCH_API_KEY: ${YANDEX_SEARCH_API_KEY:-}
+      YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID:-}
+      YANDEX_SEARCH_TYPE: ${YANDEX_SEARCH_TYPE:-SEARCH_TYPE_TR}
+      DIAGNOSTICS_ROOT: /workspace
+      AI_DATA_DIR: /data
+    depends_on:
+      ollama:
+        condition: service_started
+      freellmapi:
+        condition: service_started
+    volumes:
+      - ./:/workspace
+      - ai_data:/data
+    ports:
+      - 127.0.0.1:8787:8000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  web:
+    image: deeppanda-ai-next-web:latest
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:8788:80
+
+volumes:
+  ollama_data:
+  freellmapi_data:
+  ai_data:

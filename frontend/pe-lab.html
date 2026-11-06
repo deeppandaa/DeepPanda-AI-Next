@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#eef2ee" />
+    <title>PE Workbench · DeepPanda</title>
+    <link rel="stylesheet" href="/pe-lab.css" />
+  </head>
+  <body>
+    <main class="lab-shell">
+      <header class="lab-topbar">
+        <a class="lab-brand" href="/" aria-label="DeepPanda AI ana sayfa">
+          <span class="brand-mark" aria-hidden="true">dp</span>
+          <span>DeepPanda <b>AI</b></span>
+        </a>
+        <div class="local-indicator"><span class="local-dot" aria-hidden="true"></span>YEREL · ÇEVRİM DIŞI ANALİZ</div>
+      </header>
+
+      <section class="lab-heading" aria-labelledby="page-title">
+        <p class="eyebrow">WINDOWS · PORTABLE EXECUTABLE</p>
+        <div class="heading-row">
+          <div>
+            <h1 id="page-title">PE Workbench</h1>
+            <p class="heading-subtitle">Statik örnek incelemesi</p>
+          </div>
+          <p class="format-badge">PE32 / PE32+</p>
+        </div>
+      </section>
+
+      <section class="sample-console" aria-label="Binary sample">
+        <form id="pe-form">
+          <div class="sample-grid">
+            <div class="file-source" id="drop-zone">
+              <input id="pe-file" type="file" accept=".exe,.dll,.sys,.scr,.ocx,.com,application/octet-stream" hidden />
+              <div class="file-source-copy">
+                <span class="file-mark" aria-hidden="true">MZ</span>
+                <div>
+                  <strong id="file-name">Dosya seçilmedi</strong>
+                  <span id="file-meta">Windows PE · en fazla 10 MB</span>
+                </div>
+              </div>
+              <button id="choose-file" class="button-secondary" type="button">PE dosyası seç</button>
+            </div>
+            <div class="approval-control">
+              <label class="consent-row" for="pe-approved">
+                <input id="pe-approved" type="checkbox" />
+                <span>Seçtiğim dosyanın yerel statik incelemesini onaylıyorum. Dosya çalıştırılmaz ve harici servislere gönderilmez.</span>
+              </label>
+              <div class="analysis-actions">
+                <button id="inspect-button" class="button-primary" type="submit" disabled>Statik incele</button>
+                <span id="analysis-status" role="status" aria-live="polite">Başlamak için PE dosyası seç.</span>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section id="results" class="results" hidden aria-labelledby="sample-title">
+        <header class="result-heading">
+          <div class="result-identity">
+            <p class="eyebrow">İNCELENEN ÖRNEK</p>
+            <h2 id="sample-title"></h2>
+            <p id="sample-hash" class="mono-line"></p>
+          </div>
+          <button id="export-report" class="button-secondary" type="button">JSON dışa aktar</button>
+        </header>
+
+        <dl id="sample-facts" class="sample-facts"></dl>
+
+        <div class="workbench">
+          <nav class="view-tabs" role="tablist" aria-label="PE analysis views">
+            <button class="view-tab" id="tab-overview" type="button" role="tab" aria-selected="true" aria-controls="view-overview" data-view="overview">Genel</button>
+            <button class="view-tab" id="tab-disassembly" type="button" role="tab" aria-selected="false" aria-controls="view-disassembly" data-view="disassembly" tabindex="-1">Disassembly</button>
+            <button class="view-tab" id="tab-strings" type="button" role="tab" aria-selected="false" aria-controls="view-strings" data-view="strings" tabindex="-1">Stringler</button>
+            <button class="view-tab" id="tab-imports" type="button" role="tab" aria-selected="false" aria-controls="view-imports" data-view="imports" tabindex="-1">Imports</button>
+            <button class="view-tab" id="tab-symbols" type="button" role="tab" aria-selected="false" aria-controls="view-symbols" data-view="symbols" tabindex="-1">Fonksiyonlar / Exports</button>
+          </nav>
+
+          <section id="view-overview" class="view-panel" role="tabpanel" aria-labelledby="tab-overview">
+            <div class="panel-heading">
+              <div><p class="eyebrow">DOSYA YAPISI</p><h3>Bölümler</h3></div>
+              <span id="section-count" class="count-label"></span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Ad</th><th>Sanal boyut</th><th>Dosya boyutu</th><th>Çalıştırılabilir</th></tr></thead>
+                <tbody id="sections-body"></tbody>
+              </table>
+            </div>
+            <div class="characteristics-row">
+              <div><span class="field-label">Alt sistem</span><strong id="subsystem-value"></strong></div>
+              <div><span class="field-label">DLL özellikleri</span><strong id="dll-characteristics"></strong></div>
+            </div>
+          </section>
+
+          <section id="view-disassembly" class="view-panel" role="tabpanel" aria-labelledby="tab-disassembly" hidden>
+            <div class="panel-heading">
+              <div><p class="eyebrow">ENTRYPOINT ÖNCELİKLİ</p><h3>Talimatlar</h3></div>
+              <span id="instruction-page-label" class="count-label"></span>
+            </div>
+            <p id="disassembly-note" class="panel-note"></p>
+            <div class="table-scroll disassembly-scroll">
+              <table class="instruction-table">
+                <thead><tr><th>Adres</th><th>Baytlar</th><th>Komut</th><th>Operandlar</th></tr></thead>
+                <tbody id="instructions-body"></tbody>
+              </table>
+            </div>
+            <div class="pager">
+              <button id="previous-page" class="button-secondary" type="button">Önceki</button>
+              <span id="page-position" class="count-label"></span>
+              <button id="next-page" class="button-secondary" type="button">Sonraki</button>
+            </div>
+          </section>
+
+          <section id="view-strings" class="view-panel" role="tabpanel" aria-labelledby="tab-strings" hidden>
+            <div class="panel-heading">
+              <div><p class="eyebrow">ASCII · UTF-16LE</p><h3>Metin dizileri</h3></div>
+              <span id="strings-count" class="count-label"></span>
+            </div>
+            <label class="filter-field" for="string-filter">Metinlerde ara<input id="string-filter" type="search" placeholder="Değer veya offset" /></label>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Offset</th><th>Kodlama</th><th>Değer</th></tr></thead>
+                <tbody id="strings-body"></tbody>
+              </table>
+            </div>
+            <p id="strings-note" class="panel-note"></p>
+          </section>
+
+          <section id="view-imports" class="view-panel" role="tabpanel" aria-labelledby="tab-imports" hidden>
+            <div class="panel-heading">
+              <div><p class="eyebrow">BAĞLI KÜTÜPHANELER</p><h3>Imports</h3></div>
+              <span id="imports-count" class="count-label"></span>
+            </div>
+            <div id="imports-list" class="imports-list"></div>
+          </section>
+
+          <section id="view-symbols" class="view-panel" role="tabpanel" aria-labelledby="tab-symbols" hidden>
+            <div class="symbol-columns">
+              <section class="symbol-group" aria-labelledby="functions-title">
+                <div class="panel-heading"><div><p class="eyebrow">LIEF SEMBOLLERİ</p><h3 id="functions-title">Fonksiyonlar</h3></div><span id="functions-count" class="count-label"></span></div>
+                <div class="table-scroll"><table><thead><tr><th>Ad</th><th>Adres</th><th>Boyut</th></tr></thead><tbody id="functions-body"></tbody></table></div>
+              </section>
+              <section class="symbol-group" aria-labelledby="exports-title">
+                <div class="panel-heading"><div><p class="eyebrow">PUBLIC API</p><h3 id="exports-title">Exports</h3></div><span id="exports-count" class="count-label"></span></div>
+                <div class="table-scroll"><table><thead><tr><th>Ad</th><th>Adres</th><th>Boyut</th></tr></thead><tbody id="exports-body"></tbody></table></div>
+              </section>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <footer class="lab-footer">
+        <span>PE WORKBENCH · YALNIZCA STATİK</span>
+        <a href="/">DeepPanda AI</a>
+      </footer>
+    </main>
+    <script src="/pe-lab.js?v=2026-10-31-pe-workbench" defer></script>
+  </body>
+</html>
