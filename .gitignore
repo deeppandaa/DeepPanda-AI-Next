@@ -6,6 +6,9 @@ models/
 *.log
 __pycache__/
 .pytest_cache/
-.venv/_arsiv/
+.venv/
+_arsiv/
 .ruff_cache/
 _tmp/
+desktop/settings.ini
+graphify-out/

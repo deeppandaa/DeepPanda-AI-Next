@@ -31,6 +31,7 @@ from app.plugins.browser_inspection import (
     BrowserInspectionPlugin,
     BrowserInspectionProviderError,
 )
+from app.plugins.byox import BuildYourOwnXPlugin
 from app.plugins.cloud_providers import PROVIDERS as CLOUD_PROVIDERS
 from app.plugins.cloud_providers import (
     CloudProviderAuthRequired,
@@ -40,6 +41,7 @@ from app.plugins.cloud_providers import (
     detect_requested_provider,
 )
 from app.plugins.code_graph import CodeGraphPlugin
+from app.plugins.database import DatabasePlugin
 from app.plugins.diagnostics import DiagnosticsPlugin
 from app.plugins.documents import (
     DocumentDeleteApprovalRequired,
@@ -55,11 +57,17 @@ from app.plugins.gateway import (
     PluginNotFoundError,
     PluginShuttingDownError,
 )
+from app.plugins.graphify import GraphifyPlugin
 from app.plugins.instagram import (
     InstagramApiError,
     InstagramApprovalRequired,
     InstagramConfigurationError,
     InstagramPlugin,
+)
+from app.plugins.integration_errors import (
+    IntegrationApprovalRequired,
+    IntegrationNotFoundError,
+    IntegrationUnavailableError,
 )
 from app.plugins.intent_router import IntentRouterPlugin, IntentRouterProviderError
 from app.plugins.jobs import JobApprovalRequired, JobNotFoundError, JobsPlugin
@@ -79,6 +87,7 @@ from app.plugins.licensing import (
     LicenseStateError,
     LicensingPlugin,
 )
+from app.plugins.mcp_bridge import McpBridgePlugin
 from app.plugins.media import MediaApprovalRequired, MediaPlugin, MediaUnavailableError
 from app.plugins.memory import (
     MemoryPlugin,
@@ -87,6 +96,7 @@ from app.plugins.memory import (
 )
 from app.plugins.ocr import OcrPlugin, OcrUnavailableError
 from app.plugins.ollama import OllamaApprovalRequired, OllamaPlugin, OllamaProviderError
+from app.plugins.openjarvis import OpenJarvisPlugin
 from app.plugins.prompt_library import (
     PromptApprovalRequired,
     PromptLibraryError,
@@ -106,6 +116,7 @@ from app.plugins.reports import (
 )
 from app.plugins.research import ResearchPlugin, ResearchProviderError
 from app.plugins.sessions import SessionDeleteApprovalRequired, SessionsPlugin
+from app.plugins.skills import SkillsPlugin
 from app.plugins.speech import (
     SpeechApprovalRequired,
     SpeechPlugin,
@@ -255,6 +266,12 @@ def create_app(gateway: PluginGateway | None = None) -> FastAPI:
         plugin_gateway.register(EvaluationPlugin(plugin_gateway))
         plugin_gateway.register(InstagramPlugin())
         plugin_gateway.register(LicensingPlugin())
+        plugin_gateway.register(DatabasePlugin())
+        plugin_gateway.register(McpBridgePlugin())
+        plugin_gateway.register(SkillsPlugin(plugin_gateway))
+        plugin_gateway.register(OpenJarvisPlugin())
+        plugin_gateway.register(BuildYourOwnXPlugin(plugin_gateway))
+        plugin_gateway.register(GraphifyPlugin())
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -606,6 +623,12 @@ def create_app(gateway: PluginGateway | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Belge bulunamadı.") from exc
         except (WorkspaceWriteApprovalRequired, WorkspaceCommandApprovalRequired) as exc:
             raise HTTPException(status_code=403, detail="Workspace yazma/komut işlemi için açık onay gerekir.") from exc
+        except IntegrationApprovalRequired as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except IntegrationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except IntegrationUnavailableError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 

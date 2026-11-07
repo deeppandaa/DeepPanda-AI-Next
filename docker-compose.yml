@@ -1,3 +1,12 @@
+# Tek komut: docker compose up -d  (api + ollama + freellmapi + redis + qdrant)
+# Web arayüzü yalnızca istenince:   docker compose --profile web up -d web
+# SQL/DB yöneticisi (sqlite-web):    docker compose --profile manager up -d db-manager
+# Proje adı sabit: mevcut volume'ler (deeppanda-ai-next_ai_data vb.) korunur.
+name: deeppanda-ai-next
+
+include:
+  - docker-compose.local-services.yml
+
 services:
   ollama:
     image: ollama/ollama:latest
@@ -6,12 +15,16 @@ services:
       OLLAMA_MAX_LOADED_MODELS: "1"
     volumes:
       - ollama_data:/root/.ollama
+    ports:
+      # 11435: masaüstündeki yerel Ollama (11434) ile çakışmasın; Qt ve OpenJarvis buradan da erişebilir.
+      - "127.0.0.1:${OLLAMA_HOST_PORT:-11435}:11434"
 
   freellmapi:
     image: ghcr.io/tashfeenahmed/freellmapi:v0.16.16
     restart: unless-stopped
     env_file:
-      - .freellmapi.env
+      - path: .freellmapi.env
+        required: false
     environment:
       NODE_ENV: production
       PORT: "3001"
@@ -46,23 +59,39 @@ services:
       MODEL_ROUTING_PREFERENCES: /workspace/model-area-priorities.json
       QDRANT_URL: http://qdrant:6333
       BROWSER_ALLOWED_HOSTS: ${BROWSER_ALLOWED_HOSTS:-localhost,127.0.0.1,::1,web,host.docker.internal}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.6:latest}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:7b}
+      DEEPPANDA_BRAIN_MODEL: ${DEEPPANDA_BRAIN_MODEL:-}
       WEB_SEARCH_PROVIDER: ${WEB_SEARCH_PROVIDER:-auto}
       YANDEX_SEARCH_API_KEY: ${YANDEX_SEARCH_API_KEY:-}
       YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID:-}
       YANDEX_SEARCH_TYPE: ${YANDEX_SEARCH_TYPE:-SEARCH_TYPE_TR}
       DIAGNOSTICS_ROOT: /workspace
       AI_DATA_DIR: /data
+      REDIS_URL: redis://redis:6379/0
+      DB_MANAGER_URL: http://127.0.0.1:${DB_MANAGER_HOST_PORT:-8789}
+      MCP_SERVERS_CONFIG: /workspace/mcp-servers.json
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      SKILLS_DIRS: /data/skills:/workspace/skills
+      GRAPHIFY_GRAPH: /workspace/graphify-out/graph.json
+      OPENJARVIS_BASE_URL: ${OPENJARVIS_BASE_URL:-http://host.docker.internal:8010/v1}
+      OPENJARVIS_MODEL: ${OPENJARVIS_MODEL:-}
+      BYOX_SOURCE_URL: ${BYOX_SOURCE_URL:-https://raw.githubusercontent.com/codecrafters-io/build-your-own-x/master/README.md}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       ollama:
         condition: service_started
       freellmapi:
         condition: service_started
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
     volumes:
       - ./:/workspace
       - ai_data:/data
     ports:
-      - 127.0.0.1:8787:8000
+      - "127.0.0.1:${API_HOST_PORT:-8787}:8000"
     healthcheck:
       test:
         - CMD
@@ -78,12 +107,36 @@ services:
     image: deeppanda-ai-next-web:latest
     build:
       context: ./frontend
+    profiles: ["web"]
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     ports:
-      - 127.0.0.1:8788:80
+      - "127.0.0.1:${WEB_HOST_PORT:-8788}:80"
+
+  # SQL yöneticisi: /data altındaki tüm SQLite veritabanları (memory.db, tasks.db, jobs.db, ...).
+  # Varsayılan salt-okunur; yazma için DB_MANAGER_MODE=readwrite. SQLITE_WEB_PASSWORD verilirse parola sorar.
+  db-manager:
+    image: ghcr.io/coleifer/sqlite-web:latest
+    profiles: ["manager"]
+    restart: unless-stopped
+    environment:
+      DB_MANAGER_MODE: ${DB_MANAGER_MODE:-readonly}
+      SQLITE_WEB_PASSWORD: ${SQLITE_WEB_PASSWORD:-}
+    volumes:
+      - ai_data:/data
+    ports:
+      - "127.0.0.1:${DB_MANAGER_HOST_PORT:-8789}:8080"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -- /data/*.db
+        if [ ! -e "$$1" ]; then echo "db-manager: /data altında .db dosyası yok"; sleep 300; exit 1; fi
+        flags="-H 0.0.0.0 -p 8080 -x"
+        if [ "$$DB_MANAGER_MODE" != "readwrite" ]; then flags="$$flags -r"; fi
+        if [ -n "$$SQLITE_WEB_PASSWORD" ]; then flags="$$flags -P"; fi
+        exec sqlite_wsgi $$flags "$$@"
 
 volumes:
   ollama_data:

@@ -22,6 +22,7 @@ class IntentRouterPluginTests(unittest.TestCase):
                 "confidence": 0.94,
                 "rationale": "The message states a reusable project preference.",
                 "next_step": "Review the note and approve it before saving.",
+                "requires_local_tools": False,
                 "learning_proposal": {
                     "title": "Preferred runtime",
                     "content": "Use Python 3.12 for this project.",
@@ -70,6 +71,7 @@ class IntentRouterPluginTests(unittest.TestCase):
             "confidence": 0.8,
             "rationale": "The user requested a file change.",
             "next_step": "Create a task plan and request approval.",
+            "requires_local_tools": False,
             "learning_proposal": {
                 "title": "Ignore this",
                 "content": "Do not save me.",
@@ -134,6 +136,7 @@ class IntentRouterPluginTests(unittest.TestCase):
             "confidence": 0.91,
             "rationale": "The user gave a reusable project preference.",
             "next_step": "Review the note before saving.",
+            "requires_local_tools": False,
             "learning_proposal": {
                 "title": "Runtime preference",
                 "content": "Use Python 3.12.",

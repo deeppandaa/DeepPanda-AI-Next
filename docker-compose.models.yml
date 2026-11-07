@@ -1,10 +1,10 @@
-# Optional override: reuse the existing host Ollama model store (codellama, llama3.1,
-# nomic-embed-text, qwen2.5-coder, qwen3.6 ...) instead of downloading models again.
-# Usage:
+# Optional override: reuse an existing host Ollama model store (qwen2.5-coder, llama3.1, gemma,
+# codellama, nomic-embed-text ...) instead of downloading models again.
+# Usage (set OLLAMA_MODELS_HOST_DIR in .env first, e.g. F:/DeepPanda-Docker-Data/OllamaModels):
 #   docker compose -f docker-compose.yml -f docker-compose.models.yml up -d
 services:
   ollama:
     environment:
       OLLAMA_MODELS: /ollama-models
     volumes:
-      - ${OLLAMA_MODELS_HOST_DIR:-../DeepPanda-AI/AI-Runtimes/OllamaModels}:/ollama-models
+      - ${OLLAMA_MODELS_HOST_DIR:?OLLAMA_MODELS_HOST_DIR .env içinde tanımlanmalı}:/ollama-models

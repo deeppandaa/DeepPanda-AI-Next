@@ -15,17 +15,21 @@ from app.plugins.workflows import WorkflowNotFoundError, WorkflowsPlugin
 
 
 class WorkflowsPluginTests(unittest.TestCase):
-    def test_chat_can_opt_in_to_freellmapi_without_changing_local_intent_routing(self) -> None:
+    def test_chat_stays_local_unless_freellmapi_is_explicitly_selected(self) -> None:
         route_result = {
             "intent": "answer",
             "confidence": 0.9,
             "rationale": "Direct question.",
             "next_step": "Answer directly.",
+            "requires_local_tools": False,
             "learning_proposal": None,
         }
 
         class FakeOllama:
             manifest = PluginManifest("ollama", "Ollama", "Fake model", ("models", "chat"))
+
+            def __init__(self) -> None:
+                self.completions: list[str] = []
 
             async def invoke(self, action: str, payload: dict[str, object]) -> dict[str, object]:
                 if action == "models":
@@ -35,7 +39,8 @@ class WorkflowsPluginTests(unittest.TestCase):
                     }
                 if payload.get("format") == "json":
                     return {"message": {"content": json.dumps(route_result)}}
-                raise AssertionError("Chat completion should use FreeLLMAPI when opted in.")
+                self.completions.append(str(payload["message"]))
+                return {"model": str(payload["model"]), "message": {"content": "Local response"}}
 
         class FakeFreeLLMAPI:
             manifest = PluginManifest("freellmapi", "FreeLLMAPI", "Fake gateway", ("chat",))
@@ -64,7 +69,8 @@ class WorkflowsPluginTests(unittest.TestCase):
             "FREELLMAPI_CHAT_MODEL": "auto",
         }):
             gateway = PluginGateway()
-            gateway.register(FakeOllama())
+            local = FakeOllama()
+            gateway.register(local)
             cloud = FakeFreeLLMAPI()
             gateway.register(cloud)
             gateway.register(WorkflowsPlugin())
@@ -87,14 +93,16 @@ class WorkflowsPluginTests(unittest.TestCase):
 
         self.assertEqual(automatic.status_code, 200)
         self.assertEqual(automatic.json()["intent_route"]["model"], "qwen3.6:latest")
-        self.assertEqual(automatic.json()["intent_route"]["completion_provider"], "freellmapi")
-        self.assertEqual(automatic.json()["intent_route"]["completion_model"], "freellmapi:auto")
-        self.assertEqual(automatic.json()["message"]["content"], "Cloud response")
-        self.assertEqual(cloud.received[0]["message"], "Hello")
+        self.assertEqual(automatic.json()["intent_route"]["completion_provider"], "ollama")
+        self.assertEqual(automatic.json()["message"]["content"], "Local response")
+        self.assertEqual(local.completions, ["Hello"])
         self.assertEqual(explicit.status_code, 200)
         self.assertEqual(explicit.json()["intent_route"]["model"], "qwen3.6:latest")
+        self.assertEqual(explicit.json()["intent_route"]["completion_provider"], "freellmapi")
         self.assertEqual(explicit.json()["intent_route"]["completion_model"], "freellmapi:google/gemini-flash")
-        self.assertEqual(cloud.models, ["auto", "google/gemini-flash"])
+        self.assertEqual(explicit.json()["message"]["content"], "Cloud response")
+        self.assertEqual(cloud.received[0]["message"], "Hello again")
+        self.assertEqual(cloud.models, ["google/gemini-flash"])
 
     def test_chat_uses_area_priority_and_explicit_model_override(self) -> None:
         route_result = {
@@ -102,6 +110,7 @@ class WorkflowsPluginTests(unittest.TestCase):
             "confidence": 0.9,
             "rationale": "The user asked for a plan.",
             "next_step": "Review the plan.",
+            "requires_local_tools": False,
             "learning_proposal": None,
         }
 

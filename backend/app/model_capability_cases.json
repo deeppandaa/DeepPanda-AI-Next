@@ -46,8 +46,8 @@
     {
       "id": "source-model-name",
       "question": "Which model is configured as the default? Return the exact model name and one evidence line number.",
-      "source_lines": ["The API uses qwen3.6:latest as its default model.", "Ollama keeps one model loaded at a time.", "Embedding queries use nomic-embed-text:latest."],
-      "expected_answer": "qwen3.6:latest",
+      "source_lines": ["The API uses qwen2.5-coder:7b as its default model.", "Ollama keeps one model loaded at a time.", "Embedding queries use nomic-embed-text:latest."],
+      "expected_answer": "qwen2.5-coder:7b",
       "expected_line": 1
     }
   ],

@@ -145,7 +145,7 @@ $bundleManifest = @{
     platform = "linux/amd64"
     project = "deeppanda-offline"
     images = $images
-    models = @("qwen3.6:latest", "qwen3.8:latest", "gemma:7b", "deepseek-coder:6.7b", "nomic-embed-text:latest")
+    models = @("qwen2.5-coder:7b", "llama3.1:8b", "gemma:7b", "codellama:7b", "nomic-embed-text:latest")
     volumes = $volumes | ForEach-Object { @{ archive = "volumes/$($_.Archive)"; compose_key = $_.Archive.Replace("_data.tar", "_data") } }
 } | ConvertTo-Json -Depth 6
 Set-Content -Path (Join-Path $outputFullPath "bundle-manifest.json") -Value $bundleManifest -Encoding UTF8

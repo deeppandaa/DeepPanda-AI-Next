@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${env:GITHUB_TOKEN}"
+      }
+    },
+    "graphify": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "graphify.serve", "graphify-out/graph.json"]
+    }
+  }
+}

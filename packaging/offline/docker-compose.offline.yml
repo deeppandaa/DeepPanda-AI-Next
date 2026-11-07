@@ -16,7 +16,7 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       QDRANT_URL: http://qdrant:6333
       BROWSER_ALLOWED_HOSTS: localhost,127.0.0.1,::1,web,host.docker.internal
-      OLLAMA_MODEL: qwen3.6:latest
+      OLLAMA_MODEL: qwen2.5-coder:7b
       WEB_SEARCH_PROVIDER: auto
       DIAGNOSTICS_ROOT: /workspace
       AI_DATA_DIR: /data

@@ -65,7 +65,7 @@ class MemoryPlugin:
 
     def __init__(self, database_path: str | Path | None = None) -> None:
         if database_path is None:
-            data_root = Path(os.getenv("AI_DATA_DIR", "data")).expanduser()
+            data_root = Path(os.getenv("AI_DATA_DIR", "/data")).expanduser()
             database_path = data_root / "memory.db"
         self.database_path = Path(database_path).expanduser().resolve()
         self.proposal_ttl_seconds = max(60, int(os.getenv("MEMORY_PROPOSAL_TTL_SECONDS", str(7 * 24 * 60 * 60))))

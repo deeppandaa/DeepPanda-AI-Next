@@ -221,7 +221,7 @@ class SystemPlugin:
     async def readiness(self) -> dict[str, Any]:
         modules, binaries, features = await run_thread(partial(self._readiness_capabilities), logger)
         required = [
-            os.getenv("OLLAMA_MODEL", "qwen3.6:latest"),
+            os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b"),
             "nomic-embed-text:latest",
         ]
         installed: list[str] = []

@@ -22,10 +22,55 @@ docker compose up --build -d
 Ardından Qwen modelini açıkça indir:
 
 ```powershell
-docker compose exec ollama ollama pull qwen3.6:latest
+docker compose exec ollama ollama pull qwen2.5-coder:7b
 ```
 
-Model indirme çok sayıda GB yer kullanır ve yalnızca bu komutla başlar. Ollama aynı anda tek model yüklü tutar; bu 32 GB Docker belleğinde Qwen3.6/Qwen3.8 bellek çakışmasını önler. Sohbet arayüzü `http://127.0.0.1:8788`, API health kontrolü `http://127.0.0.1:8787/api/health` adresindedir.
+Model indirme çok sayıda GB yer kullanır ve yalnızca bu komutla başlar. Ollama aynı anda tek model yüklü tutar. Varsayılan yerel beyin **Qwen 2.5 Coder 7B**'dir (`OLLAMA_MODEL`, `model-area-priorities.json`); Qwen 3.6 artık kullanılmaz. Tüm alanları tek bir Qwen modeline sabitlemek için `.env` içinde `DEEPPANDA_BRAIN_MODEL=qwen2.5-coder:7b` verilebilir. API health kontrolü `http://127.0.0.1:8787/api/health` adresindedir; web arayüzü yalnızca istenirse açılır (aşağıdaki "Servis profilleri" bölümüne bakın).
+
+## Servis profilleri
+
+Hazır ayarlar `.env.example` içindedir; gizli değerler için `Copy-Item .env.example .env` ile kopyalayıp `.env` dosyasını düzenle (commit edilmez). Compose proje adı `deeppanda-ai-next` olarak sabittir, böylece mevcut `ai_data`, `ollama_data`, `qdrant_data`, `redis_data` volume'ları korunur.
+
+| Servis | Varsayılan adres | Nasıl başlar |
+|---|---|---|
+| API (FastAPI + PluginGateway) | `127.0.0.1:8787` (`API_HOST_PORT`) | `docker compose up -d` |
+| Ollama (Qwen 2.5) | `127.0.0.1:11435` (`OLLAMA_HOST_PORT`) | `docker compose up -d` |
+| FreeLLMAPI | `127.0.0.1:3001` (`FREELLMAPI_HOST_PORT`) | `docker compose up -d` |
+| Qdrant | `127.0.0.1:6333`, `127.0.0.1:6334` | `docker compose up -d` |
+| Redis | `127.0.0.1:6379` | `docker compose up -d` |
+| Web arayüzü | `127.0.0.1:8788` (`WEB_HOST_PORT`) | `docker compose --profile web up -d web` |
+| SQL yöneticisi (sqlite-web) | `127.0.0.1:8789` (`DB_MANAGER_HOST_PORT`) | `docker compose --profile manager up -d db-manager` |
+
+SQL yöneticisi API ile aynı `ai_data` volume'unu (`/data/*.db`: `memory.db`, `tasks.db`, `jobs.db`, ...) bağlar. Varsayılan `DB_MANAGER_MODE=readonly`; yazma gerekiyorsa `readwrite` yap. `SQLITE_WEB_PASSWORD` doluysa yönetici parola ister. API tarafındaki `database` eklentisi aynı dosyaları salt-okunur sorgular (en fazla 500 satır), bütünlük kontrolü yapar ve onaylı yedek alır; `DB_MANAGER_URL` ile yöneticinin adresini istemcilere bildirir. Var olan model klasörünü kullanmak için `OLLAMA_MODELS_HOST_DIR` verip `docker-compose.models.yml` dosyasını ekle.
+
+## Qt kontrol merkezi
+
+Günlük kullanım için web arayüzü gerekmez; masaüstü istemcisi API'nin tüm özelliklerini tek pencerede sunar:
+
+```powershell
+.\run-desktop.ps1
+```
+
+Script ilk çalıştırmada proje içinde `.venv` oluşturur, `desktop/requirements.txt` (PySide6, httpx, mcp) paketlerini kurar ve geçici/önbellek dosyalarını proje klasöründe tutar. Ayarlar `desktop/settings.ini` dosyasına yazılır (gitignored).
+
+- **Sohbet:** oturum listesi, model seçimi (otomatik, yerel Qwen/Ollama modelleri, OpenJarvis, FreeLLMAPI, bulut sağlayıcıları), iş akışı modu, Markdown yanıtlar, "Başka yapay zekâya sor", bulut anahtarı istenirse tek pencereden kaydetme. `Ctrl+Enter` gönderir, `Ctrl+N` yeni sohbet açar.
+- **Araçlar:** web arayüzündeki tüm araç formları (`desktop/tool_forms.json`, `frontend/tools.js` dosyasından `node desktop/sync_tool_forms.mjs` ile üretilir) ve hafıza, belgeler, görevler, çalışma alanı, araştırma, repo izleme, bulut, beceriler, OpenJarvis, Build Your Own X, graphify formları; aramalı ağaç ve "Gelişmiş" bölümünde herhangi bir eklenti eylemini JSON ile çalıştırma.
+- **İşler:** arka plan işleri, durum filtresi, ayrıntı, iptal, yeniden deneme ve takılı işleri kurtarma.
+- **Veritabanı:** veritabanı/tablo gezgini, salt-okunur SQL editörü, bütünlük kontrolü, yedek ve gerekirse SQL yöneticisini başlatıp açma.
+- **MCP / Copilot:** VS Code/Copilot `mcp.json` ve proje `mcp-servers.json` sunucularını listeler, araçlarını getirir ve bu bilgisayarda çalıştırır. `GITHUB_TOKEN` yoksa `gh auth token` yalnızca istemci süreci için alınır.
+- **Sistem:** API, Ollama/Qwen 2.5, OpenJarvis, graphify, SQL yöneticisi ve web durumu; yığını başlatma, konteyner durumu, API günlükleri, Qwen 2.5 indirme, API'yi yeniden derleme, web arayüzünü açma ve tanılama taraması.
+
+Onay gerektiren işlemler yalnızca bir kez "Evet, devam et / Vazgeç" penceresiyle sorulur; salt-okunur işlemler soru sormaz.
+
+## Entegrasyonlar
+
+- **GitHub Copilot MCP araçları (`mcp`):** `mcp-servers.json` içindeki `github` (`https://api.githubcopilot.com/mcp/`, `GITHUB_TOKEN`) ve `graphify` sunucuları. API'de `servers`/`tools` salt-okunur, `call` onay ister. Qt istemcisi ayrıca VS Code'daki `rea`, `kaggle` ve diğer kullanıcı MCP sunucularını kullanır.
+- **REA:** VS Code `mcp.json` içindeki `rea` (stdio, `npx rea-agents mcp`) sunucusu MCP sayfasından çalıştırılır; tersine mühendislik araçları bu bilgisayarda yürür.
+- **replica-skill ve SKILL.md becerileri (`skills`):** `/data/skills` ve `/workspace/skills` altındaki `SKILL.md` paketlerini listeler, gösterir ve yerel Qwen ile uygular. `install` onaylı olarak GitHub arşivini indirir (en fazla 50 MB); önerilen kaynaklar `Jakeschincariol/replica-skill` ve `safishamsi/graphify`.
+- **OpenJarvis (`openjarvis`):** OpenAI uyumlu `jarvis serve` sunucusuna bağlanır. WSL Ubuntu içinde `jarvis serve --host 0.0.0.0 --port 8010 -e ollama -m qwen2.5-coder:7b`; adres `OPENJARVIS_BASE_URL` (varsayılan `http://host.docker.internal:8010/v1`).
+- **Build Your Own X (`byox`):** `codecrafters-io/build-your-own-x` kataloğunu indirir, kategori/arama sunar ve seçilen eğitim için yerel Qwen ile adım planı çıkarır (`BYOX_SOURCE_URL`).
+- **graphify (`graphify`):** `pip install graphifyy`, `graphify install --platform copilot`, ardından Copilot CLI'da `/graphify .` ile `graphify-out/graph.json` üretilir. Eklenti özet, sorgu, komşular, yol ve rapor eylemlerini salt-okunur sunar (`GRAPHIFY_GRAPH`).
+- **SQL (`database`):** yukarıdaki "Servis profilleri" bölümüne bakın.
 
 ## İsteğe bağlı FreeLLMAPI chat gateway
 
@@ -118,7 +163,7 @@ Her chat isteği yanıt modelinden önce yerel `intent_router` ile `answer`, `pl
 Intent sınıflandırmasını 27 örnekli, örtüşen/olumsuz istekleri de içeren sabit benchmark ile değerlendirmek için API container'ında şunu çalıştır:
 
 ```powershell
-docker compose exec -T api python -m app.intent_eval --model qwen3.6:latest
+docker compose exec -T api python -m app.intent_eval --model qwen2.5-coder:7b
 ```
 
 JSON raporu accuracy, macro-F1, Brier score, expected calibration error, confidence bantları, sınıf karışıklık matrisi ve örnek bazlı sonuçları içerir. `--limit N` hızlı smoke test, `--output /data/intent-eval/report.json` rapor saklama, `--min-accuracy 0.8` eşik kontrolü içindir. Set küçük ve el yapımıdır; metrikler tanısaldır, istatistiksel güvence değildir. Runner yalnızca `ollama` ve `intent_router` eklentilerini kaydeder; hafızaya yazma ve araç çalıştırma yapmaz.
@@ -141,6 +186,9 @@ Eski LocalQwenAgent ile AI-Next arasındaki tam karşılaştırma ve öncelik s�
 
 ```powershell
 Push-Location backend
-python -m unittest discover -s tests
+python -m pip install pytest
+python -m pytest -q
 Pop-Location
 ```
+
+`test_integrations.py` pytest kullanır; diğer testler `unittest` uyumludur.

@@ -1,0 +1,645 @@
+[
+  {
+    "id": "prompt-library",
+    "label": "Şablonlar",
+    "forms": [
+      {
+        "title": "Yerel katalog indir / yenile",
+        "plugin": "prompt_library",
+        "action": "sync",
+        "approval": "GitHub raw.githubusercontent.com adresinden genel prompts.chat kataloğu indirilsin ve yerel katalog yenilensin mi? Mevcut katalog değiştirilecek.",
+        "fields": []
+      },
+      {
+        "title": "Yerel şablon ara (başlık)",
+        "plugin": "prompt_library",
+        "action": "local_search",
+        "fields": [
+          {
+            "name": "query",
+            "label": "Arama",
+            "maxLength": 200
+          }
+        ]
+      },
+      {
+        "title": "Çevrim içi şablon ara",
+        "plugin": "prompt_library",
+        "action": "online_search",
+        "approval": "Arama sorgusu prompts.chat adresine gönderilsin mi?",
+        "fields": [
+          {
+            "name": "query",
+            "label": "Gönderilecek sorgu",
+            "required": true,
+            "maxLength": 200
+          }
+        ]
+      },
+      {
+        "title": "Çevrim içi şablon getir",
+        "plugin": "prompt_library",
+        "action": "online_get",
+        "approval": "Seçilen şablon kimliği prompts.chat adresine gönderilsin mi?",
+        "fields": [
+          {
+            "name": "id",
+            "label": "Şablon ID",
+            "required": true,
+            "maxLength": 200
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "system",
+    "label": "Sistem",
+    "forms": [
+      {
+        "title": "Donanım",
+        "plugin": "system",
+        "action": "hardware",
+        "fields": []
+      },
+      {
+        "title": "Hazırlık durumu",
+        "plugin": "system",
+        "action": "readiness",
+        "fields": []
+      },
+      {
+        "title": "Model dosyaları",
+        "plugin": "system",
+        "action": "model_assets",
+        "fields": []
+      },
+      {
+        "title": "Ollama modeli indir",
+        "plugin": "ollama",
+        "action": "pull",
+        "approval": "Model indirilsin mi? Bu işlem uzun sürebilir.",
+        "fields": [
+          {
+            "name": "model",
+            "label": "Model",
+            "placeholder": "nomic-embed-text:latest",
+            "required": true,
+            "maxLength": 232,
+            "pattern": "[A-Za-z0-9][A-Za-z0-9._/-]{0,150}(:[A-Za-z0-9._-]{1,80})?"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "licensing",
+    "label": "Lisans",
+    "forms": [
+      {
+        "title": "Lisans durumu",
+        "plugin": "licensing",
+        "action": "status",
+        "fields": []
+      },
+      {
+        "title": "Lisans etkinleştir",
+        "plugin": "licensing",
+        "action": "activate",
+        "approval": "Lisans bu kuruluma etkinleştirilsin mi?",
+        "fields": [
+          {
+            "name": "license_key",
+            "label": "Lisans anahtarı (VANA1...)",
+            "type": "textarea",
+            "required": true,
+            "maxLength": 8000
+          }
+        ]
+      },
+      {
+        "title": "Lisansı kaldır",
+        "plugin": "licensing",
+        "action": "deactivate",
+        "approval": "Etkin lisans bu kurulumdan kaldırılsın mı?",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "id": "assets",
+    "label": "Dosyalar",
+    "forms": [
+      {
+        "title": "Üretilen dosyalar",
+        "plugin": "assets",
+        "action": "list",
+        "fields": [
+          {
+            "name": "kind",
+            "label": "Tür",
+            "type": "select",
+            "options": [
+              "",
+              "image",
+              "audio",
+              "video",
+              "report",
+              "document",
+              "other"
+            ]
+          },
+          {
+            "name": "limit",
+            "label": "Sınır",
+            "type": "number",
+            "value": "50",
+            "min": 1,
+            "max": 200,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "title": "Dosya sil",
+        "plugin": "assets",
+        "action": "delete",
+        "approval": "Dosya kalıcı olarak silinsin mi?",
+        "fields": [
+          {
+            "name": "asset_id",
+            "label": "Dosya ID",
+            "required": true,
+            "maxLength": 32,
+            "pattern": "[a-f0-9]{32}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reports",
+    "label": "Rapor",
+    "forms": [
+      {
+        "title": "Rapor dışa aktar",
+        "plugin": "reports",
+        "action": "export",
+        "approval": "Rapor dosyası oluşturulsun mu?",
+        "fields": [
+          {
+            "name": "title",
+            "label": "Başlık",
+            "value": "DeepPanda Raporu",
+            "maxLength": 200
+          },
+          {
+            "name": "format",
+            "label": "Biçim",
+            "type": "select",
+            "options": [
+              "pdf",
+              "md"
+            ]
+          },
+          {
+            "name": "content",
+            "label": "İçerik (Markdown)",
+            "type": "textarea",
+            "maxLength": 200000
+          },
+          {
+            "name": "report",
+            "label": "Rapor verisi (JSON)",
+            "type": "json",
+            "maxLength": 200000
+          },
+          {
+            "name": "sources",
+            "label": "Kaynaklar (satır başına bir)",
+            "type": "lines",
+            "maxLines": 100,
+            "maxLineLength": 2000
+          }
+        ]
+      },
+      {
+        "title": "PDF'e ek sayfa",
+        "plugin": "reports",
+        "action": "append_pdf",
+        "approval": "PDF sonuna ek eklensin mi?",
+        "fields": [
+          {
+            "name": "file",
+            "label": "PDF",
+            "type": "file",
+            "accept": ".pdf",
+            "required": true,
+            "maxBytes": 20000000
+          },
+          {
+            "name": "heading",
+            "label": "Ek başlığı",
+            "value": "Ek Bilgi",
+            "maxLength": 200
+          },
+          {
+            "name": "addition",
+            "label": "Ek metin",
+            "type": "textarea",
+            "required": true,
+            "maxLength": 50000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "speech",
+    "label": "Ses",
+    "forms": [
+      {
+        "title": "Ses durumu",
+        "plugin": "speech",
+        "action": "status",
+        "fields": []
+      },
+      {
+        "title": "Metni seslendir",
+        "plugin": "speech",
+        "action": "synthesize",
+        "approval": "Ses dosyası oluşturulsun mu?",
+        "fields": [
+          {
+            "name": "text",
+            "label": "Metin",
+            "type": "textarea",
+            "required": true,
+            "maxLength": 5000
+          }
+        ]
+      },
+      {
+        "title": "Sesi yazıya dök",
+        "plugin": "speech",
+        "action": "transcribe",
+        "fields": [
+          {
+            "name": "file",
+            "label": "Ses / video",
+            "type": "file",
+            "accept": "audio/*,video/*",
+            "required": true,
+            "maxBytes": 100000000
+          },
+          {
+            "name": "language",
+            "label": "Dil",
+            "value": "tr",
+            "maxLength": 5,
+            "pattern": "[A-Za-z]+"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ocr",
+    "label": "OCR",
+    "forms": [
+      {
+        "title": "OCR durumu",
+        "plugin": "ocr",
+        "action": "status",
+        "fields": []
+      },
+      {
+        "title": "Görselden metin çıkar",
+        "plugin": "ocr",
+        "action": "extract",
+        "fields": [
+          {
+            "name": "file",
+            "label": "Görsel",
+            "type": "file",
+            "accept": "image/*",
+            "required": true,
+            "maxBytes": 20000000
+          },
+          {
+            "name": "language",
+            "label": "Dil",
+            "value": "tur+eng",
+            "maxLength": 51,
+            "pattern": "[a-z_]{3,12}(\\+[a-z_]{3,12}){0,3}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "media",
+    "label": "Medya",
+    "forms": [
+      {
+        "title": "Medya durumu",
+        "plugin": "media",
+        "action": "status",
+        "fields": []
+      },
+      {
+        "title": "Görsel üret",
+        "plugin": "media",
+        "action": "generate_image",
+        "approval": "Yerel modelle görsel üretilsin mi?",
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "İstem",
+            "type": "textarea",
+            "required": true,
+            "maxLength": 2000
+          },
+          {
+            "name": "width",
+            "label": "Genişlik",
+            "type": "number",
+            "value": "512",
+            "min": 128,
+            "max": 768,
+            "step": 8
+          },
+          {
+            "name": "height",
+            "label": "Yükseklik",
+            "type": "number",
+            "value": "512",
+            "min": 128,
+            "max": 768,
+            "step": 8
+          },
+          {
+            "name": "steps",
+            "label": "Adım",
+            "type": "number",
+            "value": "20",
+            "min": 1,
+            "max": 30,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "title": "Video üret (arka plan işi)",
+        "plugin": "media",
+        "action": "start_video",
+        "approval": "Video üretim işi başlatılsın mı?",
+        "fields": [
+          {
+            "name": "prompt",
+            "label": "İstem",
+            "type": "textarea",
+            "required": true,
+            "maxLength": 2000
+          },
+          {
+            "name": "duration_seconds",
+            "label": "Süre (sn)",
+            "type": "number",
+            "value": "4",
+            "min": 1,
+            "max": 10,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "title": "Görsel düzenle",
+        "plugin": "media",
+        "action": "edit_image",
+        "approval": "Düzenlenmiş görsel kaydedilsin mi?",
+        "fields": [
+          {
+            "name": "file",
+            "label": "Görsel",
+            "type": "file",
+            "accept": "image/*",
+            "required": true,
+            "maxBytes": 20000000
+          },
+          {
+            "name": "operation",
+            "label": "İşlem",
+            "type": "select",
+            "options": [
+              "grayscale",
+              "rotate",
+              "resize",
+              "flip"
+            ]
+          },
+          {
+            "name": "value",
+            "label": "Değer (derece / uzun kenar pikseli; resize: 16–4096)",
+            "type": "number",
+            "value": "0",
+            "min": 0,
+            "max": 4096,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "title": "Video kes",
+        "plugin": "media",
+        "action": "edit_video",
+        "approval": "Kesilmiş video kaydedilsin mi?",
+        "fields": [
+          {
+            "name": "file",
+            "label": "Video",
+            "type": "file",
+            "accept": "video/*",
+            "required": true,
+            "maxBytes": 300000000
+          },
+          {
+            "name": "start_seconds",
+            "label": "Başlangıç (sn)",
+            "type": "number",
+            "value": "0",
+            "min": 0,
+            "max": 86400,
+            "step": "any"
+          },
+          {
+            "name": "duration_seconds",
+            "label": "Süre (sn)",
+            "type": "number",
+            "value": "10",
+            "min": 0.1,
+            "max": 3600,
+            "step": "any"
+          },
+          {
+            "name": "output_format",
+            "label": "Biçim",
+            "type": "select",
+            "options": [
+              "mp4",
+              "webm"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Video analizi",
+        "plugin": "media",
+        "action": "analyze",
+        "fields": [
+          {
+            "name": "file",
+            "label": "Video",
+            "type": "file",
+            "accept": "video/*",
+            "required": true,
+            "maxBytes": 300000000
+          },
+          {
+            "name": "transcribe",
+            "label": "Sesi yazıya dök",
+            "type": "checkbox"
+          },
+          {
+            "name": "vision",
+            "label": "Kareleri görsel modelle yorumla",
+            "type": "checkbox"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "evaluation",
+    "label": "Değerlendirme",
+    "forms": [
+      {
+        "title": "Değerlendirme çalıştır",
+        "plugin": "evaluation",
+        "action": "run",
+        "approval": "Değerlendirme işi başlatılsın mı?",
+        "fields": [
+          {
+            "name": "suite",
+            "label": "Paket",
+            "type": "select",
+            "options": [
+              "unit_tests",
+              "intent",
+              "models"
+            ]
+          },
+          {
+            "name": "model",
+            "label": "Model (isteğe bağlı)"
+          },
+          {
+            "name": "limit",
+            "label": "Örnek sınırı",
+            "type": "number",
+            "min": 1,
+            "max": 500,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "title": "Raporlar",
+        "plugin": "evaluation",
+        "action": "reports",
+        "fields": [
+          {
+            "name": "report_id",
+            "label": "Rapor ID (boş = liste)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "instagram",
+    "label": "Instagram",
+    "forms": [
+      {
+        "title": "Instagram durumu",
+        "plugin": "instagram",
+        "action": "status",
+        "fields": []
+      },
+      {
+        "title": "Görsel paylaş",
+        "plugin": "instagram",
+        "action": "publish_image",
+        "approval": "Görsel Instagram hesabında herkese açık paylaşılsın mı?",
+        "fields": [
+          {
+            "name": "image_url",
+            "label": "Public HTTPS görsel URL",
+            "type": "url",
+            "required": true,
+            "maxLength": 2000
+          },
+          {
+            "name": "caption",
+            "label": "Açıklama",
+            "type": "textarea",
+            "maxLength": 2200
+          }
+        ]
+      },
+      {
+        "title": "Reel paylaş",
+        "plugin": "instagram",
+        "action": "publish_video",
+        "approval": "Video Reel olarak herkese açık paylaşılsın mı?",
+        "fields": [
+          {
+            "name": "video_url",
+            "label": "Public HTTPS video URL",
+            "type": "url",
+            "required": true,
+            "maxLength": 2000
+          },
+          {
+            "name": "caption",
+            "label": "Açıklama",
+            "type": "textarea",
+            "maxLength": 2200
+          }
+        ]
+      },
+      {
+        "title": "Mesaj gönder",
+        "plugin": "instagram",
+        "action": "send_message",
+        "approval": "Mesaj gönderilsin mi?",
+        "fields": [
+          {
+            "name": "recipient_id",
+            "label": "Alıcı ID",
+            "required": true,
+            "maxLength": 40,
+            "pattern": "[0-9]{1,40}"
+          },
+          {
+            "name": "text",
+            "label": "Mesaj",
+            "type": "textarea",
+            "required": true,
+            "maxLength": 2000
+          }
+        ]
+      }
+    ]
+  }
+]

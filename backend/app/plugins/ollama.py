@@ -27,7 +27,7 @@ class OllamaPlugin:
 
     def __init__(self, base_url: str | None = None, default_model: str | None = None) -> None:
         self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")).rstrip("/")
-        self.default_model = default_model or os.getenv("OLLAMA_MODEL", "qwen3.6:latest")
+        self.default_model = default_model or os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
 
     async def invoke(self, action: str, payload: dict[str, Any]) -> Any:
         timeout = httpx.Timeout(600.0, connect=5.0)
