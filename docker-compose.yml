@@ -11,6 +11,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
+    gpus: all
     environment:
       OLLAMA_MAX_LOADED_MODELS: "1"
     volumes:
@@ -24,7 +25,7 @@ services:
     restart: unless-stopped
     env_file:
       - path: .freellmapi.env
-        required: false
+        required: true
     environment:
       NODE_ENV: production
       PORT: "3001"
@@ -90,6 +91,8 @@ services:
     volumes:
       - ./:/workspace
       - ai_data:/data
+      - ./models:/models:ro
+      - ./runtimes:/runtimes:ro
     ports:
       - "127.0.0.1:${API_HOST_PORT:-8787}:8000"
     healthcheck:

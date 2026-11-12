@@ -99,9 +99,11 @@ class TasksPluginTests(unittest.TestCase):
 
     def test_draft_endpoint_rejects_malformed_model_output(self) -> None:
         class DraftModel:
-            manifest = PluginManifest("ollama", "Test Model", "test", ("chat",))
+            manifest = PluginManifest("ollama", "Test Model", "test", ("models", "chat"))
 
             async def invoke(self, action: str, payload: dict[str, object]) -> dict[str, object]:
+                if action == "models":
+                    return {"models": [{"name": "fake"}], "default_model": "fake"}
                 return {"message": {"content": "not a JSON task plan"}}
 
         gateway = PluginGateway()
@@ -118,9 +120,11 @@ class TasksPluginTests(unittest.TestCase):
 
     def test_draft_endpoint_reports_truncated_model_output(self) -> None:
         class DraftModel:
-            manifest = PluginManifest("ollama", "Test Model", "test", ("chat",))
+            manifest = PluginManifest("ollama", "Test Model", "test", ("models", "chat"))
 
             async def invoke(self, action: str, payload: dict[str, object]) -> dict[str, object]:
+                if action == "models":
+                    return {"models": [{"name": "fake"}], "default_model": "fake"}
                 return {"done_reason": "length", "message": {"content": "{"}}
 
         gateway = PluginGateway()

@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import uuid
 from functools import partial
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, ClassVar
 
 from app.plugins.contracts import PluginManifest
@@ -26,19 +26,27 @@ class WorkspaceCommandApprovalRequired(Exception):
     pass
 
 
+def _is_private_environment_file(name: str) -> bool:
+    lowered = name.casefold()
+    return lowered.endswith(".env") or (lowered.startswith(".env.") and lowered != ".env.example")
+
+
 class WorkspacePlugin:
     manifest = PluginManifest(
         plugin_id="workspace",
         display_name="Workspace Tools",
-        description="Sınırlandırılmış dosya okuma, onaylı yazma ve allowlist komutları.",
+        description=(
+            "Yalnız proje çalışma alanında göreli yollarla dosya okuma, onaylı yazma ve allowlist komutları. "
+            "Windows masaüstü ve diğer mutlak host yollarına erişmez."
+        ),
         actions=("list", "read", "preview_write", "write", "rollback", "run"),
     )
 
     excluded_directories: ClassVar[frozenset[str]] = frozenset(
         {
-            ".git", ".hg", ".svn", ".venv", "venv", "env", "node_modules", "dist", "build", "out",
+            ".git", ".hg", ".svn", ".venv", ".tools", "venv", "env", "node_modules", "dist", "build", "out",
             ".next", ".cache", "__pycache__", ".pytest_cache", ".ruff_cache", "models", "ai-runtimes",
-            "packages", "vendor", "target",
+            "packages", "vendor", "target", "data", "runtimes", "_tmp", "_arsiv",
         }
     )
     allowed_commands: ClassVar[frozenset[str]] = frozenset({"python", "py", "pytest", "ruff", "git", "node", "npm", "ffmpeg"})
@@ -75,13 +83,16 @@ class WorkspacePlugin:
         if not isinstance(relative_path, str) or not relative_path.strip():
             raise ValueError("path must be a non-empty relative path.")
         raw_path = Path(relative_path)
-        if raw_path.is_absolute() or raw_path.drive:
-            raise ValueError("Absolute paths are not allowed.")
+        windows_path = PureWindowsPath(relative_path)
+        if raw_path.is_absolute() or raw_path.drive or windows_path.drive or windows_path.root:
+            raise ValueError("Absolute or drive-qualified paths are not allowed.")
+        if os.name != "nt" and "\\" in relative_path:
+            raise ValueError("Workspace paths must use forward slashes on this platform.")
         if ".." in raw_path.parts:
             raise ValueError("Parent-directory traversal is not allowed.")
         if any(part.casefold() in self.excluded_directories for part in raw_path.parts):
             raise ValueError("This workspace path is excluded from agent access.")
-        if raw_path.name.casefold() == ".env" or (raw_path.name.casefold().startswith(".env.") and raw_path.name.casefold() != ".env.example"):
+        if _is_private_environment_file(raw_path.name):
             raise ValueError("Environment secret files are excluded from agent access.")
         target = self.root / raw_path
         current = self.root
@@ -111,7 +122,7 @@ class WorkspacePlugin:
                 full_path = Path(current) / name
                 if full_path.is_symlink():
                     continue
-                if name.casefold() == ".env" or (name.casefold().startswith(".env.") and name.casefold() != ".env.example"):
+                if _is_private_environment_file(name):
                     continue
                 entries.append(
                     {

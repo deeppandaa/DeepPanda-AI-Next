@@ -3,6 +3,7 @@
 .ai-next-cloud.env
 data/
 models/
+runtimes/
 *.log
 __pycache__/
 .pytest_cache/
@@ -12,3 +13,6 @@ _arsiv/
 _tmp/
 desktop/settings.ini
 graphify-out/
+.tools/
+dist/
+tools/node_modules/

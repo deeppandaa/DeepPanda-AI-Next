@@ -6,6 +6,8 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 import httpx
 from app.plugins.byox import BuildYourOwnXPlugin, parse_catalog
@@ -19,9 +21,13 @@ from app.plugins.integration_errors import (
 from app.plugins.mcp_bridge import (
     McpBridgePlugin,
     _strip_jsonc,
+    call_tool,
     describe_server,
+    guard_transport,
+    list_tools,
     load_server_configs,
     server_transport,
+    session_tools,
 )
 from app.plugins.openjarvis import OpenJarvisPlugin
 from app.plugins.skills import SkillsPlugin, parse_skill_file
@@ -110,6 +116,48 @@ class McpBridgeTests(unittest.TestCase):
             self.assertEqual(listing["servers"], [])
             with self.assertRaises(IntegrationNotFoundError):
                 asyncio.run(plugin.invoke("tools", {"server": "nope"}))
+
+    def test_one_shot_wrappers_keep_manual_mcp_calls_working(self) -> None:
+        closed: list[bool] = []
+        tool = SimpleNamespace(name="echo", description="Echo", inputSchema={"type": "object"}, annotations=None)
+        session = SimpleNamespace(
+            list_tools=AsyncMock(return_value=SimpleNamespace(tools=[tool], nextCursor=None)),
+            call_tool=AsyncMock(return_value=SimpleNamespace(
+                content=[SimpleNamespace(type="text", text="actual output")],
+                isError=False, structuredContent={"ok": True},
+            )),
+        )
+
+        async def open_session(stack, _entry):
+            owner = asyncio.current_task()
+
+            async def close():
+                self.assertIs(asyncio.current_task(), owner)
+                closed.append(True)
+            stack.push_async_callback(close)
+            return session
+
+        with patch("app.plugins.mcp_bridge.open_session", side_effect=open_session):
+            listing = asyncio.run(list_tools({"command": "fake"}))
+            result = asyncio.run(call_tool({"command": "fake"}, "echo", {"text": "test"}))
+        self.assertEqual(listing[0]["name"], "echo")
+        self.assertEqual(result["content"][0]["text"], "actual output")
+        self.assertEqual(result["structured"], {"ok": True})
+        self.assertEqual(closed, [True, True])
+
+    def test_tool_list_pagination_limit_is_an_explicit_error(self) -> None:
+        session = SimpleNamespace(list_tools=AsyncMock(return_value=SimpleNamespace(tools=[], nextCursor="more")))
+        with self.assertRaisesRegex(IntegrationUnavailableError, "20 sayfa"):
+            asyncio.run(session_tools(session))
+        self.assertEqual(session.list_tools.call_count, 20)
+
+    def test_unknown_exception_groups_are_not_misreported_as_transport_failures(self) -> None:
+        async def failure():
+            raise ExceptionGroup("unexpected", [TypeError("programming error")])
+
+        with self.assertRaises(ExceptionGroup) as raised:
+            asyncio.run(guard_transport(failure()))
+        self.assertIsInstance(raised.exception.exceptions[0], TypeError)
 
 
 class SkillsPluginTests(unittest.TestCase):
@@ -225,6 +273,14 @@ GRAPH = {
 
 
 class GraphifyTests(unittest.TestCase):
+    def test_missing_graph_hint_does_not_claim_unverified_copilot_support(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            plugin = GraphifyPlugin(Path(folder) / "missing.json")
+            hint = plugin.status({})["hint"]
+            self.assertNotIn("--platform copilot", hint)
+            self.assertIn("Claude", hint)
+            self.assertIn("graph.json", hint)
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.path = Path(self.temp.name) / "graphify-out" / "graph.json"
@@ -278,7 +334,10 @@ class OpenJarvisTests(unittest.TestCase):
             raise httpx.ConnectError("refused")
 
         offline = OpenJarvisPlugin(base_url="http://jarvis.test/v1", api_key="", transport=httpx.MockTransport(down))
-        self.assertFalse(asyncio.run(offline.invoke("status", {}))["reachable"])
+        status = asyncio.run(offline.invoke("status", {}))
+        self.assertFalse(status["reachable"])
+        self.assertIn("run-openjarvis.ps1", status["hint"])
+        self.assertNotIn("0.0.0.0", status["hint"])
 
 
 if __name__ == "__main__":

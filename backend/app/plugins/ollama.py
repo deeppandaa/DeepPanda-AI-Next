@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 from typing import Any
 
 import httpx
-
+from app.chat_streaming import completion_streaming, emit
 from app.plugins.contracts import PluginManifest
 
 
@@ -123,37 +124,86 @@ class OllamaPlugin:
                     if not isinstance(tools, list) or any(not isinstance(tool, dict) for tool in tools):
                         raise ValueError("tools must be a list of function tool definitions.")
                     request_body["tools"] = tools
-                if payload.get("format") == "json":
-                    max_output_tokens = payload.get("max_output_tokens", 700)
-                    if (
-                        isinstance(max_output_tokens, bool)
-                        or not isinstance(max_output_tokens, int)
-                        or not 1 <= max_output_tokens <= 4_096
-                    ):
-                        raise ValueError("max_output_tokens must be an integer from 1 to 4096.")
+                json_chat = payload.get("format") == "json"
+                if json_chat:
                     response_schema = payload.get("response_schema")
                     if response_schema is not None and not isinstance(response_schema, dict):
                         raise ValueError("response_schema must be a JSON Schema object.")
                     request_body["format"] = response_schema or "json"
-                    options: dict[str, int | float] = {
-                        "num_predict": max_output_tokens,
-                        "temperature": 0.2,
-                    }
-                    max_context_tokens = payload.get("max_context_tokens")
-                    if max_context_tokens is not None:
-                        if (
-                            isinstance(max_context_tokens, bool)
-                            or not isinstance(max_context_tokens, int)
-                            or not 1_024 <= max_context_tokens <= 32_768
-                        ):
-                            raise ValueError("max_context_tokens must be an integer from 1024 to 32768.")
-                        options["num_ctx"] = max_context_tokens
+                options: dict[str, int | float] = {}
+                if json_chat or "max_output_tokens" in payload:
+                    max_output_tokens = payload.get("max_output_tokens", 700)
+                    if (
+                        isinstance(max_output_tokens, bool)
+                        or not isinstance(max_output_tokens, int)
+                        or not 1 <= max_output_tokens <= 8_192
+                    ):
+                        raise ValueError("max_output_tokens must be an integer from 1 to 8192.")
+                    options.update(num_predict=max_output_tokens, temperature=0.2)
+                max_context_tokens = payload.get("max_context_tokens")
+                if max_context_tokens is not None:
+                    if (
+                        isinstance(max_context_tokens, bool)
+                        or not isinstance(max_context_tokens, int)
+                        or not 1_024 <= max_context_tokens <= 32_768
+                    ):
+                        raise ValueError("max_context_tokens must be an integer from 1024 to 32768.")
+                    options["num_ctx"] = max_context_tokens
+                if options:
                     request_body["options"] = options
-                    think = payload.get("think")
-                    if think is not None:
-                        if not isinstance(think, bool):
-                            raise TypeError("think must be a boolean when supplied with JSON chat.")
-                        request_body["think"] = think
+                think = payload.get("think")
+                if think is not None:
+                    if not isinstance(think, bool):
+                        raise TypeError("think must be a boolean when supplied with chat.")
+                    request_body["think"] = think
+                if completion_streaming() and payload.get("format") != "json":
+                    request_body["stream"] = True
+                    content_parts: list[str] = []
+                    tool_calls: list[dict[str, Any]] = []
+                    total_chars = 0
+                    async with client.stream("POST", "/api/chat", json=request_body) as response:
+                        response.raise_for_status()
+                        async for line in response.aiter_lines():
+                            if not line:
+                                continue
+                            if len(line) > 1_000_000:
+                                raise OllamaProviderError("Ollama stream frame exceeded the size limit.")
+                            try:
+                                chunk = json.loads(line)
+                            except ValueError as exc:
+                                raise OllamaProviderError("Ollama returned invalid streaming JSON.") from exc
+                            if not isinstance(chunk, dict):
+                                raise OllamaProviderError("Ollama returned an invalid streaming object.")
+                            if chunk.get("error"):
+                                raise OllamaProviderError(str(chunk["error"])[:500])
+                            message_chunk = chunk.get("message", {})
+                            if not isinstance(message_chunk, dict):
+                                raise OllamaProviderError("Ollama returned an invalid streamed message.")
+                            text = message_chunk.get("content", "")
+                            if not isinstance(text, str):
+                                raise OllamaProviderError("Ollama returned invalid streamed content.")
+                            total_chars += len(text)
+                            if total_chars > 1_000_000:
+                                raise OllamaProviderError("Ollama streamed answer exceeded the size limit.")
+                            if text:
+                                content_parts.append(text)
+                                await emit({"type": "token", "content": text})
+                            calls = message_chunk.get("tool_calls", [])
+                            if not isinstance(calls, list) or any(not isinstance(call, dict) for call in calls):
+                                raise OllamaProviderError("Ollama returned invalid streamed tool calls.")
+                            tool_calls.extend(calls)
+                            if len(tool_calls) > 64:
+                                raise OllamaProviderError("Ollama streamed too many tool calls.")
+                            if chunk.get("done") is True:
+                                completed_message: dict[str, Any] = {
+                                    "role": "assistant", "content": "".join(content_parts),
+                                }
+                                if tool_calls:
+                                    completed_message["tool_calls"] = tool_calls
+                                result = {**chunk, "message": completed_message}
+                                result.pop("thinking", None)
+                                return result
+                    raise OllamaProviderError("Ollama stream ended before completion.")
                 response = await client.post("/api/chat", json=request_body)
                 response.raise_for_status()
                 result = self._decode(response)

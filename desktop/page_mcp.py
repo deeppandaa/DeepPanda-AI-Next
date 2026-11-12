@@ -8,7 +8,7 @@ import subprocess
 import sys
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -46,6 +46,15 @@ def ensure_github_token() -> None:
         os.environ["GITHUB_TOKEN"] = token
 
 
+def prepare_server(entry: dict[str, Any], project_dir: str) -> dict[str, Any]:
+    prepared = dict(entry)
+    if mcp_bridge.server_transport(prepared) == "stdio":
+        prepared.setdefault("cwd", project_dir)
+        if prepared.get("command") in {"python", "python3"} and str(prepared.get("_source", "")).endswith("mcp-servers.json"):
+            prepared["command"] = sys.executable
+    return prepared
+
+
 def schema_template(schema: Any) -> tuple[dict[str, Any], list[str]]:
     if not isinstance(schema, dict):
         return {}, []
@@ -64,6 +73,8 @@ def schema_template(schema: Any) -> tuple[dict[str, Any], list[str]]:
 
 
 class McpPage(QWidget):
+    result_ready = Signal(str, str, object)
+
     def __init__(self, ctx: AppContext) -> None:
         super().__init__()
         self.ctx = ctx
@@ -83,7 +94,7 @@ class McpPage(QWidget):
         refresh = QPushButton("Yapılandırmayı yeniden oku")
         refresh.clicked.connect(self.load_servers)
         left_layout.addWidget(refresh)
-        hint = QLabel("Kaynak: VS Code/Copilot mcp.json + proje mcp-servers.json.\nAraçlar bu bilgisayarda çalışır.")
+        hint = QLabel("Kaynak: VS Code/Copilot + proje + .tools yerel kurulum kaydı.\nAraçlar bu bilgisayarda çalışır.")
         hint.setObjectName("hint")
         hint.setWordWrap(True)
         left_layout.addWidget(hint)
@@ -142,12 +153,7 @@ class McpPage(QWidget):
             self.load_servers()
 
     def _prepare(self, entry: dict[str, Any]) -> dict[str, Any]:
-        prepared = dict(entry)
-        if mcp_bridge.server_transport(prepared) == "stdio":
-            prepared.setdefault("cwd", self.ctx.settings.project_dir)
-            if prepared.get("command") in {"python", "python3"} and str(prepared.get("_source", "")).endswith("mcp-servers.json"):
-                prepared["command"] = sys.executable
-        return prepared
+        return prepare_server(entry, self.ctx.settings.project_dir)
 
     def load_servers(self) -> None:
         paths = self.ctx.settings.mcp_config_paths()
@@ -279,6 +285,7 @@ class McpPage(QWidget):
                 self.result.show_text(self._pretty_text("\n\n".join(texts)))
             else:
                 self.result.show_result(result)
+            self.result_ready.emit(f"mcp:{name}", tool["name"], result)
 
         def failed(error: Exception) -> None:
             self.run_button.setEnabled(True)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -31,6 +31,8 @@ ADVANCED = "__advanced__"
 
 class AdvancedRunner(QWidget):
     """Runs any plugin action with a JSON payload, so nothing the API offers is out of reach."""
+
+    result_ready = Signal(str, str, object)
 
     def __init__(self, ctx: AppContext) -> None:
         super().__init__()
@@ -102,12 +104,17 @@ class AdvancedRunner(QWidget):
         self.status.set("Çalışıyor…", "busy")
         self.ctx.call_action(
             self, plugin, action, payload,
-            on_done=lambda result: (self.status.set("Tamamlandı.", "ok"), self.result.show_result(result)),
+            on_done=lambda result: (
+                self.status.set("Tamamlandı.", "ok"), self.result.show_result(result),
+                self.result_ready.emit(plugin, action, result),
+            ),
             on_error=lambda error: self.status.set(error_text(error), "error"),
         )
 
 
 class ToolsPage(QWidget):
+    result_ready = Signal(str, str, object)
+
     def __init__(self, ctx: AppContext) -> None:
         super().__init__()
         self.ctx = ctx
@@ -183,6 +190,20 @@ class ToolsPage(QWidget):
                     specs.append(spec)
         return specs
 
+    def select_plugin(self, plugin: str) -> bool:
+        self.search.clear()
+        for top in range(self.tree.topLevelItemCount()):
+            parent = self.tree.topLevelItem(top)
+            for index in range(parent.childCount()):
+                child = parent.child(index)
+                _key, spec = child.data(0, Qt.ItemDataRole.UserRole)
+                if spec is not None and spec["plugin"] == plugin:
+                    parent.setExpanded(True)
+                    self.tree.setCurrentItem(child)
+                    self.tree.scrollToItem(child)
+                    return True
+        return False
+
     def _select(self, item: QTreeWidgetItem | None, _previous: QTreeWidgetItem | None = None) -> None:
         if item is None:
             return
@@ -197,6 +218,7 @@ class ToolsPage(QWidget):
                 inner.load()
             else:
                 inner = FormWidget(self.ctx, spec)
+            inner.result_ready.connect(self.result_ready.emit)
             widget = QScrollArea()
             widget.setWidgetResizable(True)
             widget.setWidget(inner)

@@ -1,14 +1,18 @@
 import asyncio
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import httpx
-
 from app.main import create_app
 from app.plugins.gateway import PluginGateway
-from app.plugins.workspace import WorkspaceCommandApprovalRequired, WorkspacePlugin, WorkspaceWriteApprovalRequired
+from app.plugins.workspace import (
+    WorkspaceCommandApprovalRequired,
+    WorkspacePlugin,
+    WorkspaceWriteApprovalRequired,
+)
 
 
 class WorkspacePluginTests(unittest.TestCase):
@@ -57,6 +61,30 @@ class WorkspacePluginTests(unittest.TestCase):
                 asyncio.run(plugin.invoke("read", {"path": "../outside.txt"}))
 
         self.assertEqual(result["content"], "local content")
+
+    def test_rejects_foreign_absolute_and_ambiguous_workspace_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "workspace"
+            root.mkdir()
+            plugin = WorkspacePlugin(root, Path(directory) / "backups")
+            invalid = [
+                r"C:\Users\example\Desktop\file.txt",
+                r"C:relative\file.txt",
+                r"\\server\share\file.txt",
+                r"\Users\example\file.txt",
+                r"..\outside.txt",
+            ]
+            if os.name != "nt":
+                invalid.append(r"folder\file.txt")
+            for path in invalid:
+                with self.subTest(path=path):
+                    with self.assertRaises(ValueError):
+                        plugin._preview_write({"path": path, "content": "test"})
+                    with self.assertRaises(ValueError):
+                        plugin._write({"path": path, "content": "test", "approved": True})
+            self.assertEqual(list(root.iterdir()), [])
+            if os.name == "nt":
+                self.assertEqual(plugin._safe_path(r"folder\file.txt"), root / "folder" / "file.txt")
 
     def test_preview_does_not_write_and_write_requires_approval(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

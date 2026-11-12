@@ -1,75 +1,514 @@
 {
-  "version": 2,
-  "generated_at": "2026-11-07T00:00:00Z",
-  "note": "Qwen 2.5 Coder 7B is the primary local brain in every area; Qwen 3.6 is no longer used.",
+  "version": 3,
+  "generated_at": "2026-11-07T19:33:07.121887+00:00",
   "models_tested": [
     "qwen2.5-coder:7b",
-    "codellama:7b",
-    "llama3.1:8b"
+    "nomic-embed-text:latest",
+    "deepseek-coder:6.7b",
+    "gemma:7b",
+    "qwen3.8:latest",
+    "qwen3.6:latest"
   ],
   "area_priorities": {
     "intent": [
       "qwen2.5-coder:7b",
-      "llama3.1:8b",
-      "gemma:7b",
-      "codellama:7b"
+      "qwen3.6:latest",
+      "qwen3.8:latest",
+      "deepseek-coder:6.7b"
     ],
     "answer": [
       "qwen2.5-coder:7b",
-      "llama3.1:8b",
-      "gemma:7b",
-      "codellama:7b"
+      "qwen3.8:latest",
+      "deepseek-coder:6.7b",
+      "qwen3.6:latest"
     ],
     "planning": [
       "qwen2.5-coder:7b",
-      "llama3.1:8b",
+      "qwen3.6:latest",
       "gemma:7b",
-      "codellama:7b"
+      "qwen3.8:latest",
+      "deepseek-coder:6.7b"
     ],
     "source_grounded": [
       "qwen2.5-coder:7b",
-      "codellama:7b",
-      "llama3.1:8b",
-      "gemma:7b"
+      "qwen3.6:latest",
+      "gemma:7b",
+      "qwen3.8:latest",
+      "deepseek-coder:6.7b"
     ],
     "learning": [
+      "qwen3.6:latest",
       "qwen2.5-coder:7b",
-      "llama3.1:8b",
-      "gemma:7b",
-      "codellama:7b"
+      "qwen3.8:latest",
+      "deepseek-coder:6.7b",
+      "gemma:7b"
     ],
     "code_change": [
+      "qwen3.6:latest",
+      "deepseek-coder:6.7b",
       "qwen2.5-coder:7b",
-      "llama3.1:8b",
-      "codellama:7b",
-      "gemma:7b"
+      "gemma:7b",
+      "qwen3.8:latest"
     ]
+  },
+  "area_descriptions": {
+    "intent": "Türkçe/İngilizce istek türünü ayırma; hiçbir araç çalıştırılmaz.",
+    "answer": "Kısa Türkçe anlama, olumsuzluk ve aritmetik; serbest sohbet kalitesi ölçülmez.",
+    "planning": "Bağımlılık sıralama, güvenli geçiş planı ve döngü fark etme.",
+    "source_grounded": "Verilen kaynaktan alıntı satırıyla bilgi çıkarma; web tarama testi değildir.",
+    "learning": "Proje tercihi çıkarma ve kaydetmeme isteğine uyma; bellek yazılmaz.",
+    "code_change": "Küçük Python düzeltmelerinin AST kontrolü ve kod akıl yürütme; kod çalıştırılmaz."
+  },
+  "model_profiles": {
+    "qwen2.5-coder:7b": {
+      "kind": "chat",
+      "status": "healthy",
+      "description": "Yerel ölçüm: healthy. Eşik üstü alanlar: intent, answer, planning, source_grounded, learning, code_change.",
+      "failure_reason": null,
+      "areas": {
+        "intent": {
+          "score": 1.0,
+          "case_count": 5,
+          "attempted_count": 5,
+          "passed": 5,
+          "error_count": 0,
+          "mean_latency_seconds": 3.6,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Türkçe/İngilizce istek türünü ayırma; hiçbir araç çalıştırılmaz."
+        },
+        "answer": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 2.354,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Kısa Türkçe anlama, olumsuzluk ve aritmetik; serbest sohbet kalitesi ölçülmez."
+        },
+        "planning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 2.823,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Bağımlılık sıralama, güvenli geçiş planı ve döngü fark etme."
+        },
+        "source_grounded": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 3.203,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Verilen kaynaktan alıntı satırıyla bilgi çıkarma; web tarama testi değildir."
+        },
+        "learning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 4.188,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Proje tercihi çıkarma ve kaydetmeme isteğine uyma; bellek yazılmaz."
+        },
+        "code_change": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 4.281,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Küçük Python düzeltmelerinin AST kontrolü ve kod akıl yürütme; kod çalıştırılmaz."
+        }
+      },
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+      "checks": null,
+      "max_observed_load_seconds": 8.572
+    },
+    "nomic-embed-text:latest": {
+      "kind": "embedding",
+      "status": "healthy",
+      "description": "Embedding doğrulaması: healthy; 768 boyut. Sohbet model sıralamasına dahil değildir.",
+      "failure_reason": null,
+      "areas": {},
+      "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "checks": {
+        "dimensions": 768,
+        "vector_count": 4,
+        "finite": true,
+        "nonzero": true,
+        "duplicate_cosine": 1.0,
+        "unrelated_cosine": 0.50472,
+        "duplicate_consistent": true,
+        "distinct_input_differs": true
+      },
+      "max_observed_load_seconds": null
+    },
+    "deepseek-coder:6.7b": {
+      "kind": "chat",
+      "status": "healthy",
+      "description": "Yerel ölçüm: healthy. Eşik üstü alanlar: intent, answer, planning, source_grounded, learning, code_change.",
+      "failure_reason": null,
+      "areas": {
+        "intent": {
+          "score": 0.6,
+          "case_count": 5,
+          "attempted_count": 5,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 3.541,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Türkçe/İngilizce istek türünü ayırma; hiçbir araç çalıştırılmaz."
+        },
+        "answer": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 2.859,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Kısa Türkçe anlama, olumsuzluk ve aritmetik; serbest sohbet kalitesi ölçülmez."
+        },
+        "planning": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 3.422,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Bağımlılık sıralama, güvenli geçiş planı ve döngü fark etme."
+        },
+        "source_grounded": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 3.536,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Verilen kaynaktan alıntı satırıyla bilgi çıkarma; web tarama testi değildir."
+        },
+        "learning": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 4.261,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Proje tercihi çıkarma ve kaydetmeme isteğine uyma; bellek yazılmaz."
+        },
+        "code_change": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 4.562,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Küçük Python düzeltmelerinin AST kontrolü ve kod akıl yürütme; kod çalıştırılmaz."
+        }
+      },
+      "digest": "ce298d984115b93bb1b191b47fee6b39e4e9fbd5f18e651c02f9fa74e0edcd13",
+      "checks": null,
+      "max_observed_load_seconds": 7.29
+    },
+    "gemma:7b": {
+      "kind": "chat",
+      "status": "healthy",
+      "description": "Yerel ölçüm: healthy. Eşik üstü alanlar: planning, source_grounded, learning, code_change.",
+      "failure_reason": null,
+      "areas": {
+        "intent": {
+          "score": 0.4,
+          "case_count": 5,
+          "attempted_count": 5,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 4.472,
+          "status": "degraded",
+          "eligible": false,
+          "description": "Türkçe/İngilizce istek türünü ayırma; hiçbir araç çalıştırılmaz."
+        },
+        "answer": {
+          "score": 0.3333,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 1,
+          "error_count": 0,
+          "mean_latency_seconds": 2.969,
+          "status": "degraded",
+          "eligible": false,
+          "description": "Kısa Türkçe anlama, olumsuzluk ve aritmetik; serbest sohbet kalitesi ölçülmez."
+        },
+        "planning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 4.37,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Bağımlılık sıralama, güvenli geçiş planı ve döngü fark etme."
+        },
+        "source_grounded": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 4.021,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Verilen kaynaktan alıntı satırıyla bilgi çıkarma; web tarama testi değildir."
+        },
+        "learning": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 5.469,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Proje tercihi çıkarma ve kaydetmeme isteğine uyma; bellek yazılmaz."
+        },
+        "code_change": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 5.667,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Küçük Python düzeltmelerinin AST kontrolü ve kod akıl yürütme; kod çalıştırılmaz."
+        }
+      },
+      "digest": "a72c7f4d0a15522df81486d13ce432c79e191bda2558d024fbad4362c4f7cbf8",
+      "checks": null,
+      "max_observed_load_seconds": 9.812
+    },
+    "qwen3.8:latest": {
+      "kind": "chat",
+      "status": "healthy",
+      "description": "Yerel ölçüm: healthy. Eşik üstü alanlar: intent, answer, planning, source_grounded, learning, code_change.",
+      "failure_reason": null,
+      "areas": {
+        "intent": {
+          "score": 1.0,
+          "case_count": 5,
+          "attempted_count": 5,
+          "passed": 5,
+          "error_count": 0,
+          "mean_latency_seconds": 22.85,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Türkçe/İngilizce istek türünü ayırma; hiçbir araç çalıştırılmaz."
+        },
+        "answer": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 11.026,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Kısa Türkçe anlama, olumsuzluk ve aritmetik; serbest sohbet kalitesi ölçülmez."
+        },
+        "planning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 12.713,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Bağımlılık sıralama, güvenli geçiş planı ve döngü fark etme."
+        },
+        "source_grounded": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 12.797,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Verilen kaynaktan alıntı satırıyla bilgi çıkarma; web tarama testi değildir."
+        },
+        "learning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 18.401,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Proje tercihi çıkarma ve kaydetmeme isteğine uyma; bellek yazılmaz."
+        },
+        "code_change": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 17.443,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Küçük Python düzeltmelerinin AST kontrolü ve kod akıl yürütme; kod çalıştırılmaz."
+        }
+      },
+      "digest": "aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813",
+      "checks": null,
+      "max_observed_load_seconds": 32.693
+    },
+    "qwen3.6:latest": {
+      "kind": "chat",
+      "status": "healthy",
+      "description": "Yerel ölçüm: healthy. Eşik üstü alanlar: intent, answer, planning, source_grounded, learning, code_change.",
+      "failure_reason": null,
+      "areas": {
+        "intent": {
+          "score": 1.0,
+          "case_count": 5,
+          "attempted_count": 5,
+          "passed": 5,
+          "error_count": 0,
+          "mean_latency_seconds": 11.887,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Türkçe/İngilizce istek türünü ayırma; hiçbir araç çalıştırılmaz."
+        },
+        "answer": {
+          "score": 0.6667,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 2,
+          "error_count": 0,
+          "mean_latency_seconds": 3.203,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Kısa Türkçe anlama, olumsuzluk ve aritmetik; serbest sohbet kalitesi ölçülmez."
+        },
+        "planning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 3.562,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Bağımlılık sıralama, güvenli geçiş planı ve döngü fark etme."
+        },
+        "source_grounded": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 3.672,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Verilen kaynaktan alıntı satırıyla bilgi çıkarma; web tarama testi değildir."
+        },
+        "learning": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 3.776,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Proje tercihi çıkarma ve kaydetmeme isteğine uyma; bellek yazılmaz."
+        },
+        "code_change": {
+          "score": 1.0,
+          "case_count": 3,
+          "attempted_count": 3,
+          "passed": 3,
+          "error_count": 0,
+          "mean_latency_seconds": 3.734,
+          "status": "healthy",
+          "eligible": true,
+          "description": "Küçük Python düzeltmelerinin AST kontrolü ve kod akıl yürütme; kod çalıştırılmaz."
+        }
+      },
+      "digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+      "checks": null,
+      "max_observed_load_seconds": 43.522
+    }
   },
   "scores": {
     "qwen2.5-coder:7b": {
-      "intent": 0.9624,
-      "answer": 0.6667,
+      "intent": 1.0,
+      "answer": 1.0,
       "planning": 1.0,
       "source_grounded": 1.0,
-      "learning": 0.3333,
+      "learning": 1.0,
       "code_change": 0.6667
     },
-    "codellama:7b": {
-      "intent": 0.7442,
+    "deepseek-coder:6.7b": {
+      "intent": 0.6,
       "answer": 0.6667,
+      "planning": 0.6667,
+      "source_grounded": 0.6667,
+      "learning": 0.6667,
+      "code_change": 1.0
+    },
+    "gemma:7b": {
+      "intent": 0.4,
+      "answer": 0.3333,
       "planning": 1.0,
       "source_grounded": 1.0,
       "learning": 0.6667,
-      "code_change": 0.0
+      "code_change": 0.6667
     },
-    "llama3.1:8b": {
-      "intent": 0.9263,
+    "qwen3.8:latest": {
+      "intent": 1.0,
       "answer": 1.0,
       "planning": 1.0,
-      "source_grounded": 0.8333,
+      "source_grounded": 1.0,
       "learning": 1.0,
       "code_change": 0.6667
+    },
+    "qwen3.6:latest": {
+      "intent": 1.0,
+      "answer": 0.6667,
+      "planning": 1.0,
+      "source_grounded": 1.0,
+      "learning": 1.0,
+      "code_change": 1.0
     }
   },
-  "source": "model_eval deterministic local benchmark; priorities pinned to Qwen 2.5 by user choice"
+  "source": "model_eval bounded local deterministic benchmark",
+  "benchmark_report": "data\\model-evaluations\\2026-11-07-local-all.json",
+  "note": "Small fixed JSON/AST fixtures, one run per case; scores are not general intelligence, open conversation, production tool-use, or safety guarantees. The first case includes a cold model load; later cases are warm. No generated code is executed. Null scores mean untested; timeouts are hardware/budget specific. Intent/memory prompts were clarified to match the production taxonomy; only those areas were retested for every model. Original rounds remain available.",
+  "ranking_policy": "Complete area, >=2 cases, zero request/parse errors, score >=0.5; score descending then mean latency ascending. Unattempted cases have null scores."
 }

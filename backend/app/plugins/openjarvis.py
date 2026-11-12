@@ -45,7 +45,9 @@ class OpenJarvisPlugin:
                 models = await self._models()
             except IntegrationUnavailableError as exc:
                 return {"reachable": False, "base_url": self.base_url, "error": str(exc),
-                        "hint": "WSL Ubuntu içinde: jarvis serve --host 0.0.0.0 --port 8010"}
+                        "hint": "Proje kökünde .\\run-openjarvis.ps1; önce izole ortamı "
+                                "tools\\requirements-openjarvis.txt ile kurun (Python 3.10-3.13). "
+                                "Varsayılan bağlantı yalnız yerel 127.0.0.1:8010 adresindedir."}
             return {"reachable": True, "base_url": self.base_url, "models": models}
         if action == "models":
             return {"base_url": self.base_url, "models": await self._models()}

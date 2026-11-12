@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -16,7 +17,9 @@ from PySide6.QtWidgets import (
 )
 
 from desktop.api import ApiError
+from desktop.config import PROJECT_ROOT
 from desktop.context import AppContext, confirm, error_text
+from desktop.host_commands import API_LOGS, COMPOSE_STATUS
 from desktop.tasks import run_background
 from desktop.widgets import StatusLabel, mono_font
 
@@ -67,6 +70,8 @@ class SystemPage(QWidget):
              ("API günlükleri", self.api_logs)],
             [("Qwen 2.5 modelini indir", self.pull_model), ("API'yi yeniden derle", self.rebuild_api),
              ("Web arayüzünü aç", self.open_web), ("Tanılama taraması", self.diagnostics)],
+            [("Yerel MCP araçlarını kur", self.install_local_tools), ("Yerel MCP araçlarını doğrula", self.verify_local_tools),
+             ("Cline kur / doğrula", self.install_cline)],
         ]
         for buttons in rows:
             row = QHBoxLayout()
@@ -144,6 +149,31 @@ class SystemPage(QWidget):
         run_background(work, done, lambda error: self.status.set(error_text(error), "error"))
 
     # ---------- docker ----------
+    def install_local_tools(self) -> None:
+        if confirm(
+            self, "Node 24 ve sabitlenmiş beş MCP sunucusu proje içindeki .tools/tools alanına indirilsin mi?\n"
+            "Global kurulum yapılmaz; dosya aracı ayrı çalışma klasörüne salt okunur erişir. "
+            "Tarayıcı ve native analiz motorları indirilmez."
+        ):
+            self._run("Yerel MCP kurulumu", self._local_tools_command())
+
+    def verify_local_tools(self) -> None:
+        if confirm(self, "Beş yerel MCP süreci başlatılıp yalnızca araç listeleri doğrulansın mı?"):
+            self._run("Yerel MCP doğrulaması", [*self._local_tools_command(), "-VerifyOnly"])
+
+    def install_cline(self) -> None:
+        if confirm(self, "Resmî sabit sürümlü Cline CLI proje içindeki .tools alanına indirilsin mi?\n"
+                         "Global kurulum veya mevcut VS Code hesabından kimlik bilgisi kopyalama yapılmaz."):
+            self._run("Cline kurulumu", [
+                "powershell.exe", "-NoProfile", "-NonInteractive", "-File", str(PROJECT_ROOT / "setup-cline.ps1"),
+            ])
+
+    def _local_tools_command(self) -> list[str]:
+        return [
+            "powershell.exe", "-NoProfile", "-NonInteractive", "-File",
+            str(Path(self.ctx.settings.project_dir) / "setup-tools.ps1"),
+        ]
+
     def _run(self, title: str, args: list[str], after: Any = None) -> None:
         self.status.set(f"{title}…", "busy")
         self.log.appendPlainText(f"$ {' '.join(args)}")
@@ -163,10 +193,10 @@ class SystemPage(QWidget):
             self._run("Yığın başlatılıyor", ["docker", "compose", "up", "-d"], self.refresh)
 
     def compose_ps(self) -> None:
-        self._run("Konteyner durumu", ["docker", "compose", "--profile", "web", "--profile", "manager", "ps"])
+        self._run("Konteyner durumu", list(COMPOSE_STATUS))
 
     def api_logs(self) -> None:
-        self._run("API günlükleri", ["docker", "compose", "logs", "--tail", "200", "api"])
+        self._run("API günlükleri", list(API_LOGS))
 
     def rebuild_api(self) -> None:
         if confirm(self, "API imajı yeniden derlenip yalnızca api konteyneri yenilensin mi?\n"

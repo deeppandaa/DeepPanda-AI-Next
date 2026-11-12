@@ -4,13 +4,13 @@ import json
 import os
 import re
 import shutil
+from collections.abc import Awaitable
 from contextlib import AsyncExitStack
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import httpx
-
 from app.plugins.contracts import PluginManifest
 from app.plugins.integration_errors import (
     IntegrationNotFoundError,
@@ -18,9 +18,13 @@ from app.plugins.integration_errors import (
     require_approval,
 )
 
+if TYPE_CHECKING:
+    from mcp import ClientSession
+
 _ENV_REF = re.compile(r"\$\{env:([A-Za-z_][A-Za-z0-9_]*)\}")
 _INPUT_REF = re.compile(r"\$\{input:[^}]+\}")
 _SERVER_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.@-]{0,80}")
+T = TypeVar("T")
 
 
 def default_config_paths() -> list[Path]:
@@ -125,7 +129,7 @@ def _expand(value: str) -> str:
     return _ENV_REF.sub(lambda match: os.getenv(match.group(1), ""), value)
 
 
-async def _open_session(stack: AsyncExitStack, entry: dict[str, Any]) -> Any:
+async def open_session(stack: AsyncExitStack, entry: dict[str, Any]) -> ClientSession:
     try:
         from mcp import ClientSession, StdioServerParameters
         from mcp.client.sse import sse_client
@@ -159,35 +163,33 @@ async def _open_session(stack: AsyncExitStack, entry: dict[str, Any]) -> Any:
             read, write, _session_id = await stack.enter_async_context(
                 streamable_http_client(url, http_client=http_client)
             )
-    session = await stack.enter_async_context(ClientSession(read, write))
+    session = await stack.enter_async_context(ClientSession(read, write, read_timeout_seconds=timedelta(seconds=30)))
     await session.initialize()
     return session
 
 
-async def list_tools(entry: dict[str, Any]) -> list[dict[str, Any]]:
-    async with AsyncExitStack() as stack:
-        session = await _open_session(stack, entry)
-        tools: list[dict[str, Any]] = []
-        cursor: str | None = None
-        for _page in range(20):
-            result = await session.list_tools(cursor)
-            for tool in result.tools:
-                tools.append({
-                    "name": tool.name,
-                    "description": (tool.description or "")[:2_000],
-                    "input_schema": tool.inputSchema,
-                    "read_only": bool(getattr(tool.annotations, "readOnlyHint", False)) if tool.annotations else False,
-                })
-            cursor = result.nextCursor
-            if not cursor:
-                break
-        return tools
+async def session_tools(session: ClientSession) -> list[dict[str, Any]]:
+    tools: list[dict[str, Any]] = []
+    cursor: str | None = None
+    for _page in range(20):
+        result = await session.list_tools(cursor)
+        for tool in result.tools:
+            tools.append({
+                "name": tool.name,
+                "description": (tool.description or "")[:2_000],
+                "input_schema": tool.inputSchema,
+                "read_only": bool(getattr(tool.annotations, "readOnlyHint", False)) if tool.annotations else False,
+            })
+        cursor = result.nextCursor
+        if not cursor:
+            return tools
+    raise IntegrationUnavailableError("MCP araç listesi 20 sayfa sınırını aştı.")
 
 
-async def call_tool(entry: dict[str, Any], tool: str, arguments: dict[str, Any], timeout_seconds: float = 300) -> dict[str, Any]:
-    async with AsyncExitStack() as stack:
-        session = await _open_session(stack, entry)
-        result = await session.call_tool(tool, arguments, read_timeout_seconds=timedelta(seconds=timeout_seconds))
+async def session_call_tool(
+    session: ClientSession, tool: str, arguments: dict[str, Any], timeout_seconds: float = 300,
+) -> dict[str, Any]:
+    result = await session.call_tool(tool, arguments, read_timeout_seconds=timedelta(seconds=timeout_seconds))
     content: list[dict[str, Any]] = []
     for block in result.content:
         kind = getattr(block, "type", "")
@@ -206,6 +208,54 @@ async def call_tool(entry: dict[str, Any], tool: str, arguments: dict[str, Any],
         "content": content,
         "structured": result.structuredContent,
     }
+
+
+async def list_tools(entry: dict[str, Any]) -> list[dict[str, Any]]:
+    async def run() -> list[dict[str, Any]]:
+        async with AsyncExitStack() as stack:
+            session = await open_session(stack, entry)
+            return await session_tools(session)
+    return await guard_transport(run())
+
+
+async def call_tool(entry: dict[str, Any], tool: str, arguments: dict[str, Any], timeout_seconds: float = 300) -> dict[str, Any]:
+    async def run() -> dict[str, Any]:
+        async with AsyncExitStack() as stack:
+            session = await open_session(stack, entry)
+            return await session_call_tool(session, tool, arguments, timeout_seconds)
+    return await guard_transport(run())
+
+
+def transport_error(exc: Exception) -> IntegrationUnavailableError | None:
+    expected: tuple[type[Exception], ...]
+    try:
+        from anyio import BrokenResourceError, ClosedResourceError, EndOfStream
+        from mcp.shared.exceptions import McpError
+    except ImportError:
+        expected = (OSError, TimeoutError, httpx.HTTPError)
+    else:
+        expected = (OSError, TimeoutError, httpx.HTTPError, BrokenResourceError, ClosedResourceError, EndOfStream, McpError)
+
+    def leaves(error: Exception) -> list[Exception]:
+        if isinstance(error, ExceptionGroup):
+            return [leaf for child in error.exceptions for leaf in leaves(child)]
+        return [error]
+
+    failures = leaves(exc)
+    if not failures or not all(isinstance(failure, expected) for failure in failures):
+        return None
+    details = "; ".join(dict.fromkeys(str(failure) or type(failure).__name__ for failure in failures))
+    return IntegrationUnavailableError(f"MCP bağlantısı başarısız: {details[:1_000]}")
+
+
+async def guard_transport(coroutine: Awaitable[T]) -> T:
+    try:
+        return await coroutine
+    except Exception as exc:
+        translated = transport_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 class McpBridgePlugin:
@@ -250,10 +300,4 @@ class McpBridgePlugin:
 
     @staticmethod
     async def _guard(coroutine: Any) -> Any:
-        try:
-            return await coroutine
-        except (IntegrationUnavailableError, IntegrationNotFoundError, ValueError):
-            raise
-        except Exception as exc:
-            inner = exc.exceptions[0] if isinstance(exc, ExceptionGroup) and exc.exceptions else exc
-            raise IntegrationUnavailableError(f"MCP sunucusuna bağlanılamadı: {inner}") from exc
+        return await guard_transport(coroutine)

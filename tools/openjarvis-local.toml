@@ -1,0 +1,34 @@
+[engine]
+default = "ollama"
+
+[engine.ollama]
+host = "http://127.0.0.1:11435"
+
+[server]
+host = "127.0.0.1"
+port = 8010
+agent = "simple"
+model = "qwen3.6:latest"
+
+[agent]
+default_agent = "simple"
+context_from_memory = false
+
+[tools]
+enabled = "think,calculator"
+
+[analytics]
+enabled = false
+
+[telemetry]
+enabled = false
+
+[traces]
+enabled = false
+
+[agent_manager]
+enabled = false
+
+[skills]
+enabled = false
+auto_discover = false

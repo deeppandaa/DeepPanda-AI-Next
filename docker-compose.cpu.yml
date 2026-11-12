@@ -1,0 +1,5 @@
+# Explicit opt-out for machines without NVIDIA GPU support.
+# docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d
+services:
+  ollama:
+    gpus: !reset []

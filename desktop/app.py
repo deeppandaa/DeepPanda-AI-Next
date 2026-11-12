@@ -4,6 +4,7 @@ import sys
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
 from desktop.api import ApiError
 from desktop.config import Settings
 from desktop.context import AppContext
+from desktop.page_catalog import CatalogPage
 from desktop.page_chat import ChatPage
 from desktop.page_database import DatabasePage
 from desktop.page_jobs import JobsPage
@@ -71,6 +73,7 @@ QToolTip { background: #262b35; color: #e6e9ef; border: 1px solid #323846; }
 PAGES = [
     ("chat", "💬  Sohbet"),
     ("tools", "🧰  Araçlar"),
+    ("catalog", "📚  Gelişmiş araçlar"),
     ("jobs", "⏱  İşler"),
     ("database", "🗄  Veritabanı"),
     ("mcp", "🔌  MCP / Copilot"),
@@ -89,6 +92,7 @@ class MainWindow(QMainWindow):
         self.pages: dict[str, QWidget] = {
             "chat": ChatPage(ctx),
             "tools": ToolsPage(ctx),
+            "catalog": CatalogPage(ctx, self._open_plugin),
             "jobs": JobsPage(ctx),
             "database": DatabasePage(ctx),
             "mcp": McpPage(ctx),
@@ -140,6 +144,21 @@ class MainWindow(QMainWindow):
         self.nav.setCurrentRow(0)
         QTimer.singleShot(200, self.check_health)
 
+    def closeEvent(self, event: QCloseEvent) -> None:
+        chat = self.pages["chat"]
+        if isinstance(chat, ChatPage) and chat.busy:
+            self.health_timer.stop()
+            chat.stop()
+            event.ignore()
+            QTimer.singleShot(200, self.close)
+            return
+        self.health_timer.stop()
+        if isinstance(chat, ChatPage) and chat.mcp_runtime is not None:
+            event.ignore()
+            chat.release_mcp(self.close)
+            return
+        super().closeEvent(event)
+
     def _page_changed(self, row: int) -> None:
         if row < 0:
             return
@@ -160,6 +179,12 @@ class MainWindow(QMainWindow):
     def _insert_into_chat(self, text: str) -> None:
         self.navigate("chat")
         self.pages["chat"].insert_text(text)
+
+    def _open_plugin(self, plugin: str) -> None:
+        self.navigate("tools")
+        page = self.pages["tools"]
+        if isinstance(page, ToolsPage) and not page.select_plugin(plugin):
+            self.notify(f"{plugin} için hazır form yok; Gelişmiş bölümünden eylem seç.", "warn")
 
     def notify(self, text: str, kind: str = "info") -> None:
         colors = {"error": "#f87171", "warn": "#fbbf24", "ok": "#4ade80"}

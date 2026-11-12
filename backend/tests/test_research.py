@@ -247,9 +247,11 @@ class ResearchPluginTests(unittest.TestCase):
         model_calls: list[dict[str, Any]] = []
 
         class FakeModel:
-            manifest = PluginManifest("ollama", "Fake Ollama", "test", ("chat",))
+            manifest = PluginManifest("ollama", "Fake Ollama", "test", ("models", "chat"))
 
             async def invoke(self, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+                if action == "models":
+                    return {"models": [{"name": "fake"}], "default_model": "fake"}
                 model_calls.append(payload)
                 return {"message": {"content": "The repository is a local-first plugin gateway. [1]"}, "model": "fake"}
 

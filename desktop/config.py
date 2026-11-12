@@ -21,6 +21,9 @@ class Settings:
     extra_mcp_configs: str = ""
     include_vscode_mcp: bool = True
     request_timeout: int = 600
+    cline_workspace: str = str(PROJECT_ROOT / "projects")
+    cline_model: str = ""
+    program_review_model: str = ""
 
     @classmethod
     def load(cls) -> Settings:
@@ -53,6 +56,7 @@ class Settings:
             if appdata:
                 paths.append(Path(appdata) / "Code" / "User" / "mcp.json")
         paths.append(Path(self.project_dir) / "mcp-servers.json")
+        paths.append(Path(self.project_dir) / ".tools" / "mcp-servers.json")
         for item in self.extra_mcp_configs.split(os.pathsep):
             if item.strip():
                 paths.append(Path(item.strip()).expanduser())

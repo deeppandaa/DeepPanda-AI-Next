@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
 from desktop.context import AppContext, error_text
 from desktop.tasks import run_background
 from desktop.widgets import ResultView, StatusLabel
+from desktop.windows_host import HOST_FORMS
 
 WEB_FORMS_FILE = Path(__file__).with_name("tool_forms.json")
 DRAFT = "__task_draft__"
@@ -33,6 +35,13 @@ _DOC = 20_000_000
 # Forms for features that live in the web app's main panels (app.js / cloud.js) and for the new
 # integrations. Same schema as frontend/tools.js TOOLS so one form builder serves both.
 EXTRA_GROUPS: list[dict[str, Any]] = [
+    {"id": "multi_agent", "label": "Çoklu ajan", "forms": [
+        {"title": "Yerel çoklu ajan akışı", "plugin": "multi_agent", "action": "run",
+         "approval": "İstek Qwen/Ollama üzerinde beş yerel ajan aşamasından geçirilsin mi? Ajanlar dosya, ağ veya araç erişimi kullanmaz.",
+         "fields": [
+             {"name": "request", "label": "İstek", "type": "textarea", "required": True, "maxLength": 6000},
+             {"name": "model", "label": "Yerel model (boş = otomatik)"}]},
+    ]},
     {"id": "memory", "label": "Hafıza", "forms": [
         {"title": "Hafızada ara", "plugin": "memory", "action": "search", "fields": [
             {"name": "query", "label": "Arama", "required": True, "maxLength": 500},
@@ -121,17 +130,17 @@ EXTRA_GROUPS: list[dict[str, Any]] = [
             {"name": "instruction", "label": "Talimat", "type": "textarea", "required": True},
             {"name": "model", "label": "Model (boş = otomatik)"}]},
     ]},
-    {"id": "workspace", "label": "Çalışma alanı", "forms": [
-        {"title": "Dosyaları listele", "plugin": "workspace", "action": "list", "fields": [
-            {"name": "path", "label": "Klasör", "value": "."}]},
-        {"title": "Dosya oku", "plugin": "workspace", "action": "read", "fields": [
-            {"name": "path", "label": "Dosya", "required": True}]},
-        {"title": "Yazma önizlemesi", "plugin": "workspace", "action": "preview_write", "fields": [
-            {"name": "path", "label": "Dosya", "required": True},
+    {"id": "workspace", "label": "Çalışma alanı (proje içi)", "forms": [
+        {"title": "Proje içindeki dosyaları listele", "plugin": "workspace", "action": "list", "fields": [
+            {"name": "path", "label": "Proje içi göreli klasör", "value": "."}]},
+        {"title": "Proje içindeki dosyayı oku", "plugin": "workspace", "action": "read", "fields": [
+            {"name": "path", "label": "Proje içi göreli dosya yolu", "required": True}]},
+        {"title": "Proje içi dosyanın yazma önizlemesi", "plugin": "workspace", "action": "preview_write", "fields": [
+            {"name": "path", "label": "Proje içi göreli dosya yolu", "required": True},
             {"name": "content", "label": "Yeni içerik", "type": "textarea", "required": True}]},
-        {"title": "Dosyaya yaz", "plugin": "workspace", "action": "write", "approval": "Dosya yazılsın mı? (yedek alınır)",
+        {"title": "Proje içi göreli yola dosya yaz (masaüstü için Windows host)", "plugin": "workspace", "action": "write", "approval": "Dosya yazılsın mı? (yedek alınır)",
          "fields": [
-            {"name": "path", "label": "Dosya", "required": True},
+            {"name": "path", "label": "Proje içi göreli yol; Windows masaüstü yolu değil", "required": True},
             {"name": "content", "label": "İçerik", "type": "textarea", "required": True},
             {"name": "expected_sha256", "label": "Beklenen SHA-256 (önizlemeden)"}]},
         {"title": "Komut çalıştır", "plugin": "workspace", "action": "run", "approval": "Komut çalışma alanında çalıştırılsın mı?",
@@ -259,12 +268,64 @@ EXTRA_GROUPS: list[dict[str, Any]] = [
 ]
 
 
+PAGE_TOOL_SPECS: list[dict[str, Any]] = [
+    {"plugin": "system", "action": "hardware",
+     "title": "API çalışma ortamının CPU/RAM/GPU donanımı (Docker ise Linux konteyneri)", "fields": []},
+    {"plugin": "system", "action": "model_assets", "title": "API ortamındaki yerel model dosyaları", "fields": []},
+    {"plugin": "system", "action": "readiness", "title": "API çalışma ortamı ve model hazırlığı", "fields": []},
+    {"plugin": "ollama", "action": "models", "title": "Kurulu yerel modeller", "fields": []},
+    {"plugin": "ollama", "action": "pull", "title": "Yerel Ollama modeli indir (indirme için onay gerekir)", "fields": [
+        {"name": "model", "label": "Yerel model adı", "required": True, "maxLength": 232,
+         "pattern": "[A-Za-z0-9][A-Za-z0-9._/-]{0,150}(?::[A-Za-z0-9._-]{1,80})?"}]},
+    {"plugin": "workflows", "action": "catalog", "title": "Çalışma modları", "fields": []},
+    {"plugin": "workflows", "action": "get", "title": "Çalışma modu ayrıntısı", "fields": [
+        {"name": "mode", "label": "Mod", "type": "select",
+         "options": ["standard", "plan", "debug", "review", "audit", "minimal"]}]},
+    {"plugin": "database", "action": "overview", "title": "Veritabanlarını listele", "fields": []},
+    {"plugin": "database", "action": "tables", "title": "Veritabanı tabloları ve sütunları", "fields": [
+        {"name": "database", "label": "Veritabanı dosya adı", "required": True, "maxLength": 130}]},
+    {"plugin": "database", "action": "query", "title": "Veritabanında salt okunur SQL sorgusu", "fields": [
+        {"name": "database", "label": "Veritabanı dosya adı", "required": True, "maxLength": 130},
+        {"name": "sql", "label": "SELECT, WITH, EXPLAIN veya VALUES sorgusu", "type": "textarea",
+         "required": True, "maxLength": 20_000},
+        {"name": "limit", "label": "Satır sınırı", "type": "number", "min": 1, "max": 500}]},
+    *[
+        {"plugin": "database", "action": action, "title": title, "fields": [
+            {"name": "database", "label": "Veritabanı dosya adı", "required": True, "maxLength": 130}]}
+        for action, title in (("check", "Veritabanı bütünlüğü"), ("backup", "Veritabanını yedekle"))
+    ],
+    {"plugin": "jobs", "action": "list", "title": "Arka plan işlerini listele", "fields": [
+        {"name": "status", "label": "Durum", "type": "select",
+         "options": ["queued", "running", "cancel_requested", "succeeded", "failed", "cancelled"]},
+        {"name": "limit", "label": "Sınır", "type": "number", "min": 1, "max": 100}]},
+    *[
+        {"plugin": "jobs", "action": action, "title": title, "fields": [
+            {"name": "job_id", "label": "İş kimliği", "required": True, "maxLength": 32}]}
+        for action, title in (("get", "İş ayrıntısı"), ("cancel", "İşi iptal et"), ("retry", "İşi yeniden dene"))
+    ],
+    {"plugin": "jobs", "action": "recover_stale", "title": "Takılı işleri kurtar", "fields": [
+        {"name": "stale_after_seconds", "label": "En az hareketsiz süre (saniye)", "type": "number",
+         "min": 60, "max": 604_800},
+        {"name": "limit", "label": "İş sınırı", "type": "number", "min": 1, "max": 100}]},
+    {"plugin": "jobs", "action": "recovery_candidates", "title": "Takılı iş kurtarma önizlemesi", "fields": [
+        {"name": "stale_after_seconds", "label": "En az hareketsiz süre (saniye)", "type": "number",
+         "min": 60, "max": 604_800},
+        {"name": "limit", "label": "İş sınırı", "type": "number", "min": 1, "max": 100}]},
+    {"plugin": "memory", "action": "import", "title": "Seçilen hafıza JSON yedeğini onayla ve içe aktar", "fields": [
+        {"name": "file", "label": "Seçili hafıza yedeği", "type": "file", "required": True}]},
+    {"plugin": "reports", "action": "status", "title": "Rapor araçlarının durumu", "fields": []},
+    {"plugin": "evaluation", "action": "suites", "title": "Ölçüm ve test paketleri", "fields": []},
+    {"plugin": "multi_agent", "action": "roles", "title": "Çoklu ajan rolleri", "fields": []},
+]
+
+
 def load_groups() -> list[dict[str, Any]]:
     try:
         web_groups = json.loads(WEB_FORMS_FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         web_groups = []
-    return [*EXTRA_GROUPS, *web_groups]
+    return [*EXTRA_GROUPS, {"id": "windows_host", "label": "Windows host / USB / COM / Kayıt", "forms": HOST_FORMS},
+            *(group for group in web_groups if group["id"] != "windows_host")]
 
 
 def _number(raw: Any, default: float) -> float:
@@ -276,6 +337,8 @@ def _number(raw: Any, default: float) -> float:
 
 class FormWidget(QWidget):
     """Builds one tool form from a TOOLS-style spec and runs it through the shared approval flow."""
+
+    result_ready = Signal(str, str, object)
 
     def __init__(self, ctx: AppContext, spec: dict[str, Any]) -> None:
         super().__init__()
@@ -416,6 +479,8 @@ class FormWidget(QWidget):
                         raise ValueError(f"{label} satırları en fazla {field['maxLineLength']} karakter olabilir.")
                     if lines:
                         payload[name] = lines
+                elif field.get("preserveWhitespace"):
+                    payload[name] = text
                 elif text.strip():
                     payload[name] = text.strip()
             else:
@@ -464,13 +529,18 @@ class FormWidget(QWidget):
     def _done(self, result: Any) -> None:
         self.run_button.setEnabled(True)
         message = "Tamamlandı."
+        kind = "ok"
         if isinstance(result, dict):
-            if self.spec["action"] == "local_search" and result.get("installed") is False:
+            if self.spec["plugin"] == "windows_host" and result.get("status") == "failed":
+                message = "İşlem başarısız; gerçek çıktı ve işlem kaydını inceleyin."
+                kind = "error"
+            elif self.spec["action"] == "local_search" and result.get("installed") is False:
                 message = "Yerel katalog henüz indirilmedi; önce 'Yerel katalog indir / yenile'."
             elif isinstance(result.get("skipped_reports"), list) and result["skipped_reports"]:
                 message = f"Tamamlandı; okunamayan raporlar: {', '.join(map(str, result['skipped_reports']))}"
-        self.status.set(message, "ok")
+        self.status.set(message, kind)
         self.result.show_result(result)
+        self.result_ready.emit(self.spec["plugin"], self.spec["action"], result)
 
     def _failed(self, error: Exception) -> None:
         self.run_button.setEnabled(True)

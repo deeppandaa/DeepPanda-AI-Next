@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar
 
+from app.chat_context import MAX_CHAT_TEXT_CHARS
 from app.plugins.contracts import PluginManifest
 
 
@@ -105,7 +106,9 @@ class SessionsPlugin:
     def _append_turn(self, payload: dict[str, Any]) -> dict[str, Any]:
         session_id = self._text(payload.get("session_id", ""), "session_id", 80)
         user_message = self._text(payload.get("user_message", ""), "user_message", 20_000)
-        assistant_message = self._text(payload.get("assistant_message", ""), "assistant_message", 20_000)
+        assistant_message = self._text(
+            payload.get("assistant_message", ""), "assistant_message", MAX_CHAT_TEXT_CHARS,
+        )
         title = self._text(payload.get("title", user_message[:80]), "title", 200)
         now = self._now()
         with self._connection() as connection:

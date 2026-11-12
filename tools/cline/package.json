@@ -1,0 +1,9 @@
+{
+  "name": "deeppanda-cline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned official native Cline CLI for the Windows Qt client",
+  "dependencies": {
+    "@cline/cli-windows-x64": "3.0.74"
+  }
+}

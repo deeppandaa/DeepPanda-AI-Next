@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 import httpx
-
+from app.chat_context import MAX_CHAT_TEXT_CHARS
 from app.main import create_app
 from app.plugins.contracts import PluginManifest
 from app.plugins.gateway import PluginGateway
@@ -13,13 +13,35 @@ from app.plugins.workflows import WorkflowsPlugin
 
 
 class FakeOllama:
-    manifest = PluginManifest("ollama", "Ollama", "Fake model", ("chat",))
+    manifest = PluginManifest("ollama", "Ollama", "Fake model", ("models", "chat"))
 
     async def invoke(self, action: str, payload: dict[str, object]) -> dict[str, object]:
+        if action == "models":
+            return {"default_model": "fake", "models": [{"name": "fake"}]}
         return {"model": "fake", "message": {"content": "stored answer"}}
 
 
 class SessionsPluginTests(unittest.TestCase):
+    def test_assistant_message_limit_matches_chat_text_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            plugin = SessionsPlugin(Path(directory) / "chat.db")
+            content = "x" * MAX_CHAT_TEXT_CHARS
+            result = asyncio.run(plugin.invoke("append_turn", {
+                "session_id": "large-answer",
+                "user_message": "question",
+                "assistant_message": content,
+            }))
+            messages = asyncio.run(plugin.invoke("messages", {"session_id": result["session_id"]}))
+
+            with self.assertRaisesRegex(ValueError, "48000 characters"):
+                asyncio.run(plugin.invoke("append_turn", {
+                    "session_id": "too-large-answer",
+                    "user_message": "question",
+                    "assistant_message": content + "x",
+                }))
+
+        self.assertEqual(len(messages["messages"][-1]["content"]), MAX_CHAT_TEXT_CHARS)
+
     def test_chat_api_persists_session_and_requires_delete_approval(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             gateway = PluginGateway()

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
+import json
 from collections.abc import Callable
 from typing import Any
 
@@ -10,21 +8,26 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QWidget
 
-from desktop.api import ApiClient, ApiError
+from desktop import host_commands
+from desktop.api import ApiError
 from desktop.config import Settings
+from desktop.host_commands import run_host_command
 from desktop.tasks import run_background
+from desktop.windows_api import DesktopApiClient as ApiClient
+from desktop.windows_host import HOST_MUTATIONS, HOST_PRIVATE_READS
 
-CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+CREATE_NO_WINDOW = host_commands.CREATE_NO_WINDOW
 
-
-def confirm(parent: QWidget | None, text: str, title: str = "Onay") -> bool:
+def confirm(parent: QWidget | None, text: str, title: str = "Onay", *, details: str | None = None) -> bool:
     box = QMessageBox(parent)
     box.setIcon(QMessageBox.Icon.Question)
     box.setWindowTitle(title)
     box.setText(text)
     yes = box.addButton("Evet, devam et", QMessageBox.ButtonRole.AcceptRole)
-    box.addButton("Vazgeç", QMessageBox.ButtonRole.RejectRole)
-    box.setDefaultButton(yes)
+    no = box.addButton("Vazgeç", QMessageBox.ButtonRole.RejectRole)
+    if details is not None:
+        box.setDetailedText(details)
+    box.setDefaultButton(no if details is not None else yes)
     box.exec()
     return box.clickedButton() is yes
 
@@ -64,6 +67,41 @@ class AppContext:
         """Runs a plugin action in the background. Asks at most once for approval:
         up front when the action is known to need it, otherwise only if the API answers 403."""
         body = dict(payload or {})
+        if plugin == "windows_host" and action in HOST_MUTATIONS:
+            def previewed(preview: dict[str, Any]) -> None:
+                if not confirm(
+                    parent, f"Windows host › {action}\nHedef: {preview['target']}\n"
+                    "Ayrıntılardaki önizleme ve uyarıları inceleyin. Bu işlem uygulansın mı?",
+                    details=json.dumps(preview, ensure_ascii=False, indent=2),
+                ):
+                    failed(ApiError(403, "Onay verilmedi; işlem yapılmadı."))
+                    return
+                run_background(
+                    lambda: self.api.action(plugin, action, {"plan_id": preview["plan_id"], "approved": True}),
+                    done, failed,
+                )
+
+            def failed(error: Exception) -> None:
+                self.notify(error_text(error), "error")
+                if on_error is not None:
+                    on_error(error)
+
+            def done(result: Any) -> None:
+                if on_done is not None:
+                    on_done(result)
+
+            run_background(
+                lambda: self.api.action(plugin, "preview", {"action": action, "arguments": body}),
+                previewed, failed,
+            )
+            return True
+        if plugin == "windows_host" and action in HOST_PRIVATE_READS:
+            if not confirm(parent, f"Bu host verisi okunsun mu?\n{body}",
+                           details=json.dumps(body, ensure_ascii=False, indent=2)):
+                self.notify("Onay verilmedi; işlem yapılmadı.", "warn")
+                return False
+            body["approved"] = True
+            approval = None
         if approval:
             if not confirm(parent, approval):
                 self.notify("Onay verilmedi; işlem yapılmadı.", "warn")
@@ -106,29 +144,7 @@ class AppContext:
     ) -> None:
         """Runs a host command (docker, gh ...) in the project directory without a console window."""
         project_dir = self.settings.project_dir
-
-        def work() -> dict[str, Any]:
-            executable = shutil.which(args[0])
-            if executable is None:
-                return {"ok": False, "code": -1, "output": f"Komut bulunamadı: {args[0]}"}
-            try:
-                completed = subprocess.run(
-                    [executable, *args[1:]],
-                    check=False,
-                    cwd=project_dir,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    timeout=timeout,
-                    env={**os.environ, **(env or {})},
-                    creationflags=CREATE_NO_WINDOW,
-                )
-            except subprocess.TimeoutExpired:
-                return {"ok": False, "code": -1, "output": f"Zaman aşımı ({timeout} sn): {' '.join(args)}"}
-            except OSError as exc:
-                return {"ok": False, "code": -1, "output": str(exc)}
-            output = (completed.stdout or "") + (completed.stderr or "")
-            return {"ok": completed.returncode == 0, "code": completed.returncode, "output": output.strip()}
-
-        run_background(work, on_done, lambda error: on_done({"ok": False, "code": -1, "output": error_text(error)}))
+        run_background(
+            lambda: run_host_command(args, project_dir, timeout, env),
+            on_done, lambda error: on_done({"ok": False, "code": -1, "output": error_text(error)}),
+        )

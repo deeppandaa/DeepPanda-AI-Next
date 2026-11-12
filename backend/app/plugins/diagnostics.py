@@ -35,6 +35,7 @@ class DiagnosticsPlugin:
         ".hg",
         ".svn",
         ".venv",
+        ".tools",
         "venv",
         "env",
         "node_modules",
@@ -51,6 +52,10 @@ class DiagnosticsPlugin:
         "packages",
         "vendor",
         "target",
+        "data",
+        "runtimes",
+        "_tmp",
+        "_arsiv",
     })
     excluded_name_fragments = ("secret", "credential", "token")
     max_files = 5000

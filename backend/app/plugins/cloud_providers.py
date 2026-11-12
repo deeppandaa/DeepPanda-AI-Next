@@ -45,6 +45,11 @@ PROVIDERS: dict[str, CloudProvider] = {
     provider.provider_id: provider
     for provider in (
         CloudProvider(
+            "nvidia", "NVIDIA NIM", "https://integrate.api.nvidia.com/v1",
+            "meta/llama-3.1-8b-instruct", "https://build.nvidia.com/", "https://build.nvidia.com/",
+            False, ("nvidia", "nim"),
+        ),
+        CloudProvider(
             "gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
             "gemini-3.5-flash", "https://aistudio.google.com/apikey", "https://aistudio.google.com/",
             True, ("gemini", "google"),

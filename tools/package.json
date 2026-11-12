@@ -1,0 +1,21 @@
+{
+  "name": "deeppanda-local-mcp-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated local MCP servers for the DeepPanda Qt client",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "2.2.0",
+    "@modelcontextprotocol/server-sequential-thinking": "2.1.1",
+    "@playwright/mcp": "0.0.84",
+    "chrome-devtools-mcp": "1.12.0",
+    "rea-agents": "6.8.0"
+  },
+  "deeppanda": {
+    "nodeVersion": "24.22.2",
+    "nodeArchiveSha256": "ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2",
+    "nodeExecutableSha256": "1c331340fa6cac5e4294725959070a143fa0507195a78ad77eed7943f719aac9"
+  }
+}

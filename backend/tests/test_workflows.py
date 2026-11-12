@@ -182,12 +182,14 @@ class WorkflowsPluginTests(unittest.TestCase):
 
     def test_selected_workflow_reaches_model_as_system_prompt(self) -> None:
         class FakeOllama:
-            manifest = PluginManifest("ollama", "Ollama", "Fake model", ("chat",))
+            manifest = PluginManifest("ollama", "Ollama", "Fake model", ("models", "chat"))
 
             def __init__(self) -> None:
                 self.received: dict[str, object] = {}
 
             async def invoke(self, action: str, payload: dict[str, object]) -> dict[str, object]:
+                if action == "models":
+                    return {"models": [{"name": "fake"}], "default_model": "fake"}
                 self.received = payload
                 return {"message": {"content": "ok"}}
 

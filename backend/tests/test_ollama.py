@@ -210,10 +210,28 @@ class OllamaPluginTests(unittest.TestCase):
             "temperature": 0.2,
             "num_ctx": 8192,
         })
-        with self.assertRaisesRegex(ValueError, "1 to 4096"):
-            asyncio.run(invoke({"message": "Return JSON", "format": "json", "max_output_tokens": 4097}))
+        asyncio.run(invoke({"message": "Return JSON", "format": "json", "max_output_tokens": 8192}))
+        self.assertEqual(FakeClient.request_body["options"], {"num_predict": 8192, "temperature": 0.2})
+        with self.assertRaisesRegex(ValueError, "1 to 8192"):
+            asyncio.run(invoke({"message": "Return JSON", "format": "json", "max_output_tokens": 8193}))
         with self.assertRaisesRegex(ValueError, "1024 to 32768"):
             asyncio.run(invoke({"message": "Return JSON", "format": "json", "max_context_tokens": 32769}))
+        asyncio.run(invoke({
+            "message": "Summarize actual agent results", "max_output_tokens": 4096,
+            "max_context_tokens": 16384, "think": False,
+        }))
+        self.assertNotIn("format", FakeClient.request_body)
+        self.assertFalse(FakeClient.request_body["think"])
+        self.assertEqual(FakeClient.request_body["options"], {
+            "num_predict": 4096, "temperature": 0.2, "num_ctx": 16384,
+        })
+        for field, value, exception in (
+            ("max_output_tokens", 8193, ValueError),
+            ("max_context_tokens", True, ValueError),
+            ("think", "false", TypeError),
+        ):
+            with self.subTest(field=field), self.assertRaises(exception):
+                asyncio.run(invoke({"message": "Normal chat", field: value}))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,17 @@
 [
   {
+    "id": "windows_host",
+    "label": "Windows host (Qt gerekir)",
+    "forms": [
+      {
+        "title": "Windows / USB / COM / sürücü / kayıt erişimi: Qt istemcisini kullanın",
+        "plugin": "windows_host",
+        "action": "status",
+        "fields": []
+      }
+    ]
+  },
+  {
     "id": "prompt-library",
     "label": "Şablonlar",
     "forms": [

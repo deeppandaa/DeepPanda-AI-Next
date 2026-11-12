@@ -164,7 +164,9 @@ class GraphifyPlugin:
             modified = self.graph_path.stat().st_mtime
         except OSError as exc:
             raise IntegrationUnavailableError(
-                f"graph.json bulunamadı: {self.graph_path}. Önce Copilot CLI'da '/graphify .' çalıştırın."
+                f"graph.json bulunamadı: {self.graph_path}. Mevcut bir graphify grafiğini bu yola koyun; "
+                "graf üretimi ayrı bir işlemdir ve upstream Claude Code gerektirir. "
+                "Kaynakları buluta göndermeden önce veri aktarımı iznini doğrulayın."
             ) from exc
         if self._cache is not None and self._cache[0] == modified:
             return self._cache[1]
@@ -188,7 +190,11 @@ class GraphifyPlugin:
             "exists": exists,
             "report_exists": report.is_file(),
             "html_exists": self.graph_path.with_name("graph.html").is_file(),
-            "hint": "" if exists else "pip install graphifyy; graphify install --platform copilot; sonra Copilot CLI'da /graphify .",
+            "hint": "" if exists else (
+                "Mevcut graph.json dosyasını GRAPHIFY_GRAPH yoluna koyun. "
+                "Upstream graf üretimi Claude Code gerektirir; Copilot platform desteği doğrulanmadı. "
+                "Kurulum ve kaynakların buluta aktarılması ayrıca değerlendirilmelidir."
+            ),
         }
 
     def summary(self, payload: dict[str, Any]) -> dict[str, Any]:

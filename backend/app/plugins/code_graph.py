@@ -83,9 +83,9 @@ class CodeGraphPlugin:
 
     excluded_directories = frozenset(
         {
-            ".git", ".hg", ".svn", ".venv", "venv", "env", "node_modules", "dist", "build", "out",
+            ".git", ".hg", ".svn", ".venv", ".tools", "venv", "env", "node_modules", "dist", "build", "out",
             ".next", ".cache", "__pycache__", ".pytest_cache", ".ruff_cache", "models", "ai-runtimes",
-            "packages", "vendor", "target",
+            "packages", "vendor", "target", "data", "runtimes", "_tmp", "_arsiv",
         }
     )
     max_files = 3000

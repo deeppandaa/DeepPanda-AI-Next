@@ -4,6 +4,12 @@
 (() => {
   const TOOLS = [
     {
+      id: 'windows_host', label: 'Windows host (Qt gerekir)', forms: [
+        { title: 'Windows / USB / COM / sürücü / kayıt erişimi: Qt istemcisini kullanın',
+          plugin: 'windows_host', action: 'status', fields: [] },
+      ],
+    },
+    {
       id: 'prompt-library', label: 'Şablonlar', forms: [
         { title: 'Yerel katalog indir / yenile', plugin: 'prompt_library', action: 'sync',
           approval: 'GitHub raw.githubusercontent.com adresinden genel prompts.chat kataloğu indirilsin ve yerel katalog yenilensin mi? Mevcut katalog değiştirilecek.', fields: [] },

@@ -23,11 +23,11 @@ class PluginGatewayTests(unittest.TestCase):
         plugin_actions = {plugin["id"]: plugin["actions"] for plugin in gateway.list_plugins()}
 
         self.assertEqual(set(plugin_actions), {
-            "analysis", "assets", "binary_analysis", "browser", "byox", "cloud_providers", "codegraph",
+            "analysis", "assets", "binary_analysis", "browser", "byox", "chat_attachments", "cloud_providers", "codegraph",
             "database", "diagnostics", "documents", "evaluation", "freellmapi", "graphify", "instagram",
             "intent_router", "jobs", "knowledge", "legacy_history", "licensing", "mcp", "media", "memory",
-            "ocr", "ollama", "openjarvis", "prompt_library", "reports", "repo_watch", "research", "sessions",
-            "skills", "speech", "system", "task_assistant", "tasks", "workflows", "workspace",
+            "multi_agent", "ocr", "ollama", "openjarvis", "prompt_library", "reports", "repo_watch", "research", "sessions",
+            "skills", "speech", "system", "task_assistant", "tasks", "windows_host", "workflows", "workspace",
         })
         self.assertTrue(all(actions for actions in plugin_actions.values()))
         self.assertTrue(all(len(actions) == len(set(actions)) for actions in plugin_actions.values()))
